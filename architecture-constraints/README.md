@@ -1,0 +1,254 @@
+---
+name: architecture-constraints
+description: '严格架构约束 — 技能/工具/上下文的层级依赖、调用规则、错误级联。打破约束=入error-registry'
+category: devops
+tags: [core, governance, architecture]
+related_skills: [error-registry, task-progress, browser-automation, computer-use-mcp, cli-anything]
+---
+
+# 🏗️ 严格架构约束 (Strict Architecture Constraints)
+
+> 以下约束**必须遵守**。违反即记入 error-registry，下次同类任务自动加载纠正记录。
+
+---
+
+## 0. 核心原则
+
+```
+1. Layer N 不能跳过 Layer N-1 直接调用 Layer N+1
+2. 失败必须沿 Error Cascade 降级，不能跳过
+3. 每种任务类型只能由指定技能处理
+4. 上下文必须按 Scope 裁剪，不能超载
+5. 治理在基础设施层实现，不靠提示词约束
+6. Agent 由事件触发，不靠手动输入启动
+7. 每次执行都在隔离沙箱中运行
+```
+
+## 0.5 LangChain 架构映射 (参考)
+
+LangChain 的设计模式可以直接映射到我们的架构约束中。
+
+| LangChain 概念 | 我们的实现 | 约束 |
+|:---------------|:-----------|:-----|
+| **Chain** (链) | Layer 级联 (L1→L2→L3→L4) | 不能跳链，只能沿 error cascade 降级 |
+| **Agent + Tools** | 任务类型路由到对应 Layer | 上下文裁剪 = 只加载当前任务的 tools |
+| **Memory** (持久记忆) | `task-progress` + `error-registry` | 每个任务结束后必须更新 memory |
+| **Callback** (回调) | Post-Task Retrospective | `SKIP_RETROSPECTIVE` 记错 |
+| **Evaluator** (评估器) | 复盘第2步"结果是否符合预期" | 不符合 → 分析差距 → 更新 progress |
+| **Retriever** (检索器) | 开始前查 error-registry 已知错误 | `SKIP_KNOWN_FIX` / `REPEAT_ERROR` 记错 |
+| **Router** (路由) | 上下文裁剪 = 按类型路由到正确 Layer | `CTX_OVERLOAD` 记错 |
+| **Tool** (工具) | 各 Layer 的具体能力 (Playwright/CDP/AI/截图) | 只通过所在 Layer 暴露，不能跨层调用 |
+| **Chain-of-Thought** | 每步先思考 → 查记录 → 再执行 | 体现在复盘的"先查重复再动手" |
+
+### 执行流程 (参照 LangChain Agent 模式)
+
+```
+Input (用户请求)
+  │
+  ├─ Router: 判断任务类型 → 只加载对应 Layer 的 tools
+  │
+  ├─ Retriever: 查 error-registry → 加载相关错误记录
+  │
+  ├─ Agent (思考):
+  │   ├─ 当前进度? → 查 task-progress
+  │   ├─ 已知坑?   → 查 error-registry
+  │   └─ 正确路径? → 查 architecture-constraints
+  │
+  ├─ Chain (执行):
+  │   Layer 1 → 失败 → Layer 2 → 失败 → Layer 3...
+  │   每步结果 → 更新 task-progress
+  │   每步错误 → 记入 error-registry
+  │
+  ├─ Evaluator (复盘):
+  │   1. 读日志 → 有错? → 记入 error-registry
+  │   2. 读产出 → 符合预期? → 更新 progress
+  │   3. 查重复 → 这次错以前犯过?
+  │   4. 学教训 → 更新修复方案
+  │   5. 固化 → 需要创建 skill?
+  │   6. 收尾 → 标记完成
+  │
+  └─ Output (结果 + 复盘报告)
+```
+
+## 0.6 Self-Driving Codebase 成熟度模型 (参考)
+
+参照 Self-Driving Codebase 的三阶段进化，我们的自动化能力也分三级：
+
+| 阶段 | 特征 | 对应我们的实现 |
+|:-----|:------|:---------------|
+| **1. Copilot** (补全+对话) | 单步执行，人在回路 | 标准工具调用，每次手动下发指令 |
+| **2. Agent** (多步执行+监督) | 多步推理，人审批高风险 | `task-progress` 追踪 + `error-registry` 审计 |
+| **3. Autonomous** (事件触发+自动) | 后台运行，事件驱动，批量并行 | 目标态：cron/webhook 触发 Hermes 技能 |
+
+**约束**: 当前我们在阶段 1→2 的过渡期。阶段 3 是目标，三要素缺一不可:
+- 事件触发 (webhook/cron → skill)
+- 治理层 (IAM/审计/credential scoping → error-registry)
+- 隔离执行 (sandbox → 独立 venv/workspace)
+
+
+---
+
+## 1. 能力层级 (Strict Stack)
+
+```
+Layer  ┌──────────────────────────────────────┐
+ 7     │  task-progress       进度追踪系统      │ ← 任何复杂任务自动挂载
+ 6     │  error-registry      报错表            │ ← 全时挂载
+ 5     │  architecture-constraints 本文件      │ ← 全时挂载
+───────┼──────────────────────────────────────┼────────
+ 4     │  computer-use-mcp    桌面操控(MCP)     │ ← 仅桌面操控任务
+ 3     │  cli-anything        软件原生CLI       │ ← 仅软件封装任务
+ 2     │  browser-automation  浏览器自动化(4层)  │ ← 仅网页任务
+ 1     │  标准工具 (terminal/read_file/...)     │ ← 全时可用
+ 0     │  memory              持久记忆          │ ← 全时注入
+```
+
+**约束**: 上层可以调用下层，下层不能调用上层。
+**约束**: 同层之间不能交叉调用 (2层不能调3层的方法)。
+
+---
+
+## 2. 上下文裁剪规则 (Context Scoping)
+
+| 任务类型 | 必须加载 | 禁止加载 |
+|:---------|:---------|:---------|
+| browser automation (U校园/爬虫) | L2 browser-automation, L5 error-registry, L6 task-progress | L4 computer-use-mcp, L3 cli-anything |
+| 桌面操控 (截图/鼠标/键盘) | L4 computer-use-mcp, L5 error-registry | L2 browser-automation, L3 cli-anything |
+| 软件CLI封装 (Blender/Obsidian CLI) | L3 cli-anything, cli-anything-hermes, L5 error-registry | L2, L4 |
+| 纯开发/编码 (写代码/改bug) | L1 标准工具, L5 error-registry | L2, L3, L4 |
+| 操作系统实验报告 | 实验报告相关技能 (ucampus 等) | L2-L4 全部自动化工具 |
+
+**约束**: 加载禁止项 = `CTX_OVERLOAD` 错误，记入 error-registry。
+
+---
+
+## 3. 错误级联 (Error Cascade)
+
+```
+Layer N 调用失败
+  → 查 error-registry 是否有已知修复
+    → 有 → 应用修复 → 重试 Layer N
+    → 无 → 降级到 Layer N-1 替代方案
+      → 成功 → 记入 task-progress "使用替代方案"
+      → 失败 → 继续降级到 Layer N-2
+        → 直到 Layer 0 (标准工具) 仍失败 → 报告用户
+```
+
+**具体级联路径**:
+
+```
+browser-automation (L2) 内部:
+  L1 Playwright 失败
+    → L2 CDP Harness (bhts) 失败
+      → L3 browser-use AI 失败
+        → L4 Screenshot Vision 失败
+          → 报告用户 + 记入 error-registry
+
+computer-use-mcp (L4) 失败:
+  → 查 error-registry → 确认 native binding 是否存在
+  → 尝试 pip 替代 (pyautogui/pynput)
+  → 尝试 Linux 原生 (ydotool/grim)
+  → 报告用户
+```
+
+**约束**: 不能跳过级联中的任何一层直接报错。
+
+---
+
+## 4. 文件/命名约束
+
+```
+技能目录:   ~/.hermes/skills/<category>/<name>/
+类别:       browser-automation | devops | software-development | ...
+进度文件:   ~/.hermes/tasks/<task-id>/progress.md
+产出物:     ~/.hermes/tasks/<task-id>/artifacts/
+错误表:     ~/.hermes/skills/devops/error-registry/SKILL.md
+
+命名规则:
+  - 技能名: kebab-case (browser-automation)
+  - 任务ID: YYYYMMDD_HHMMSS_<简短描述>
+  - 产出物: <step-number>_<描述>.<ext>
+```
+
+---
+
+## 5. 技能调用约束
+
+```yaml
+# 调用前必须执行
+pre-check:
+  - "当前任务类型是什么?" → 对照上下文裁剪规则
+  - "之前报过什么错?" → 查 error-registry 对应条目
+  - "是否有进行中的任务?" → 查 task-progress
+
+# 调用后必须执行
+post-check:
+  - "执行成功?" → 更新 task-progress
+  - "遇到新错误?" → 记入 error-registry
+  - "有产出物?" → 记入 task-progress artifacts
+```
+
+---
+
+## 6. 违反后果
+
+| 违反 | 后果 |
+|:-----|:-----|
+| 跳层调用 (L1→L3) | 记入 error-registry `SKIP_LAYER_VIOLATION` |
+| 加载禁止上下文 | 记入 error-registry `CTX_OVERLOAD` |
+| 重复已报过的错误 | 记入 error-registry `REPEAT_ERROR` |
+| 跳过 error-registry 检查 | 记入 error-registry `SKIP_KNOWN_FIX` |
+| 未更新 task-progress | 记入 error-registry `PROGRESS_MISSING` |
+| 未执行 Post-Task Retrospective | 记入 error-registry `SKIP_RETROSPECTIVE` |
+
+---
+
+## 7. Post-Task 强制复盘 (Post-Task Retrospective)
+
+每个任务完成后**必须**执行以下复盘流程:
+
+### 复盘清单 (必须逐条执行)
+
+```yaml
+复盘步骤:
+  1. 读日志: "这次执行有没有报错?"
+     → 有 → 分析根因 → 记入 error-registry
+     → 无 → 跳过
+  2. 读产出: "结果是否符合预期?"
+     → 不符合 → 分析差距 → 更新 task-progress "待修复"
+     → 符合 → 确认
+  3. 查重复: "这个错以前犯过吗?"
+     → 查 error-registry 对应条目
+     → 重复了 → 记入 REPEAT_ERROR → 强化修复
+  4. 学教训: "下次如何避免?"
+     → 更新 error-registry 的修复方案
+     → 更新 architecture-constraints (如果需要加新约束)
+  5. 固化: "需要保存为 skill 吗?"
+     → 如果这个工作流是重复性的 → 创建/更新 skill
+  6. 收尾: 更新 task-progress → 标记阶段完成 + 记录复盘结果
+```
+
+### 复盘触发时机
+
+```
+每个任务完成后 → 强制复盘
+  遇到错误修复后 → 强化复盘 (重点查修复是否有效)
+  用户纠正后 → 记录纠正内容 → 更新 error-registry
+  新对话开始时 → 加载 error-registry → 查历史高发错误
+```
+
+### 强化机制 (Reinforcement Loop)
+
+```
+犯错 → 记入 error-registry
+   → 下次同类型任务前自动加载对应条目
+     → 预判可能的错误
+       → 主动规避
+         → 成功了 → 强化成功
+           → 失败了 (又犯了) → REPEAT_ERROR
+             → 更显式的修复方案
+               → 下次一定不会再犯
+```
+
+**约束**: 每个任务完成到下一任务开始之间，必须有复盘间隙。连续执行多个任务时，复盘中发现的阻塞必须先修复再进入下一个。
+
