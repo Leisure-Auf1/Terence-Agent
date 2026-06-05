@@ -93,10 +93,13 @@ Debugger 修复完成
   │     ├─ 2. 更新 task-progress
   │     │     └─ progress done <task> "修复 <错误码>"
   │     │
-  │     └─ 3. 通知 Logger 记录
-  │           └─ "Debugger 完成修复，error-registry 已更新"
+  ├─ 3. 通知 Logger 记录
+  │     └─ "Debugger 完成修复，error-registry 已更新"
   │
-  └─ ❌ 修复失败
+  ├─ 4. (可选) 同步到 Git
+  │     └─ bash ~/Terence-Agent/sync.sh "🔧 修复: <错误码>"
+  │
+  └─ ✅ 修复完成
         └─ 记入 error-registry → 升级到 Guidance Agent
 ```
 
