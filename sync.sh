@@ -19,7 +19,5 @@ done
 
 git add -A
 git commit -m "$MSG"
-git config --global http.sslVerify false
-git push
-git config --global http.sslVerify true
+git -c http.sslVerify=false push
 echo "✅ 已同步: $MSG"
