@@ -7,8 +7,9 @@ related_skills: [architecture-constraints, error-registry, task-progress, browse
 
 # 🧠 技能管理器 Agent (Skill Manager)
 
-> **角色**: 任务入口路由。我是连接"用户请求"和"技能执行"之间的调度中枢。
-> **调用规则**: 每次新对话/新任务，先加载本技能 → 查注册表 → 分配 → 执行。
+> **角色**: 技能注册表 + 参考路由。我是**信息源**，不是**决策者**。
+> **决策者**: `guidance-agent` 根据 Phase 0 "随机应变"原则做最终路由决策。
+> **我的职责**: 提供完整的技能列表、用途描述、挂载策略供 guidance-agent 参考。
 
 ---
 
@@ -67,7 +68,28 @@ related_skills: [architecture-constraints, error-registry, task-progress, browse
 
 ---
 
-## 2. 路由规则 (Routing Logic)
+## 2. 路由参考 (Routing Reference)
+
+> **⚠️ 重要**: 以下路由规则是**参考性指引**，不是硬性规则。
+> 实际路由必须由 `guidance-agent` 按 Phase 0 "随机应变"原则动态判断。
+> 关键词匹配仅供参考，不应替代倾听用户的实际需求。
+
+```yaml
+核心原则: 先倾听，再判断，不预设分类。
+
+正确做法:
+  ├─ 听用户说完 → 理解具体需求 → 按需选技能
+  ├─ 不确定时 → 加载最少必要技能 → 逐步补充
+  ├─ 用户纠正 → 立即调整 → 记入 error-registry (CTX_OVERLOAD)
+  └─ 每次独立判断 → 同一个用户的不同请求可能不同
+
+不正确的做法:
+  ├─ "浏览器任务必须加载X、编码任务必须加载Y" → ❌ 太刚性
+  ├─ 大段的 "if 关键词匹配...elif...else" → ❌ 替代了倾听
+  └─ "禁止加载" 写死 → ❌ 同一个工具在不同场景都有用
+```
+
+### 常见场景参考 (仅做参考，不是规则)
 
 ```yaml
 接任务 → 判断任务类型 → 查注册表 → 分配技能 → 加载 → 执行
@@ -105,18 +127,16 @@ related_skills: [architecture-constraints, error-registry, task-progress, browse
 
 ---
 
-## 3. 执行前 Checklist (Pre-Execution)
+## 3. 执行前检查 (Pre-Execution)
 
-路由完成后，执行前必须完成：
+路由完成后，执行前快速确认：
 
 ```yaml
-☐ 加载了 architecture-constraints?  (全时挂载)
-☐ 加载了 error-registry?            (全时挂载)
-☐ 任务类型判断正确?                  (符合路由规则)
-☐ 加载的技能与任务类型匹配?           (对照上下文裁剪)
-☐ 只加载了必要的技能?                 (没有 CTX_OVERLOAD)
-☐ 检查了 error-registry 历史错误?    (避免 REPEAT_ERROR)
-☐ 检查了 task-progress 进行中任务?   (避免重复工作)
+☐ 加载了 guidance-agent?               (任务指挥官)
+☐ 加载了 error-registry?                (查历史错误)
+☐ 加载的技能是否确实必要?                (不是越多越好)
+☐ 有进行中的任务? → 查 task-progress    (避免重复)
+☐ 有相关历史错误? → 查 error-registry   (避免 REPEAT_ERROR)
 ```
 
 ---
@@ -137,9 +157,12 @@ skill_view(name='skill-manager')
 
 ---
 
-## 5. 路由示例
+## 5. 路由示例 (仅供参考)
 
-| 用户说 | 路由结果 |
+> ⚠️ 以下示例只是"过去某个任务这么路由过"，不是"以后同类任务必须这么路由"。
+
+| 用户说 | 过去的一次路由结果 |
+|:-------|:-----------------|
 |:-------|:---------|
 | "去U校园做Unit 3" | `ucampus-auto-complete`, `error-registry`, `task-progress` |
 | "帮我打开百度" | `browser-automation`(伞) → L1 Playwright, `error-registry` |
