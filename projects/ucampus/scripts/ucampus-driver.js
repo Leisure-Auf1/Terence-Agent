@@ -1,42 +1,211 @@
 /**
- * U校园 AI 版 通用自动化驱动 (U-Campus Universal Driver)
- * =================================================
+ * ██╗   ██╗  ██████╗ █████╗ ███╗   ███╗██████╗ ██╗   ██╗███████╗
+ * ██║   ██║ ██╔════╝██╔══██╗████╗ ████║██╔══██╗██║   ██║██╔════╝
+ * ██║   ██║ ██║     ███████║██╔████╔██║██████╔╝██║   ██║███████╗
+ * ██║   ██║ ██║     ██╔══██║██║╚██╔╝██║██╔═══╝ ██║   ██║╚════██║
+ * ╚██████╔╝ ╚██████╗██║  ██║██║ ╚═╝ ██║██║     ╚██████╔╝███████║
+ *  ╚═════╝   ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝      ╚═════╝ ╚══════╝
  *
- * 零硬编码 — 所有个性化参数由运行参数传入。
- * 两阶段架构: Phase1 提取题目 → 模型分析 → Phase2 填入答案。
+ * U校园 AI 版 · 通用自动化驱动引擎
+ * ====================================
+ * 
+ * 【这是什么？】
+ * 一个用 Puppeteer + Chrome CDP 自动完成 U校园 AI 版课程的脚本。
+ * 支持所有任务类型：选择题、填空、拖拽、视频、闪卡、讨论区、自评表格。
  *
- * 用法:
- *   # 1. 提取当前任务数据（给模型分析）
- *   node ucampus-driver.js extract [options]
+ * 【怎么用？两阶段流程】
+ * 
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║  第1步: 启动 Chrome（有头模式，一次启动，持续使用）           ║
+ * ║  第2步: 手动登录 U校园（浏览器界面操作，只需一次）             ║
+ * ║  第3步: 提取题目 → 模型分析答案 → 执行提交（循环）           ║
+ * ╚══════════════════════════════════════════════════════════════╝
  *
- *   # 2. 执行模型分析的答案
- *   node ucampus-driver.js execute '{"answers":[...],"taskName":"Words in use"}' [options]
+ * ══════════════════════════════════════════════════════════════
+ * 前置准备（只需做一次）
+ * ══════════════════════════════════════════════════════════════
+ * 
+ * ① 安装 Node.js 和 Puppeteer:
+ *    sudo pacman -S nodejs npm                      # Arch Linux
+ *    mkdir -p /tmp && cd /tmp && npm install puppeteer
+ *    # 验证: ls /tmp/node_modules/puppeteer
  *
- *   # 3. 查看课程状态（无需账号密码）
- *   node ucampus-driver.js status [options]
+ * ② 启动 Chrome（有头模式，可看到操作过程）:
+ *    google-chrome-stable --remote-debugging-port=9222 \
+ *      --user-data-dir=/tmp/chrome-cdp \
+ *      --no-first-run --no-default-browser-check \
+ *      --no-sandbox --disable-gpu --no-proxy-server &
  *
- *   # 4. 查看完整学习记录
- *   node ucampus-driver.js progress [options]
+ *    ⚠️ 如果你的系统有代理设置（如 Clash/SSR）:
+ *      必须加 --no-proxy-server，否则 ERR_CONNECTION_CLOSED
  *
- *   # 5. 自动完成任务链（提取→分析→执行 循环）
- *   node ucampus-driver.js chain [options]
+ *    💡 如果导航到 U校园失败:
+ *      先手动开标签页访问 https://www.baidu.com 再跳转
+ *      （绕行 Chrome 网络栈初始化问题）
  *
- * 参数选项 (所有模式通用):
- *   --courseUrl=<URL>    课程详情页 URL（默认从 COUSE_URL 读取）
- *   --cdpUrl=<URL>       Chrome CDP 地址（默认 http://127.0.0.1:9222）
- *   --unit=<N>           指定单元编号（默认当前页所在单元）
- *   --section=<A|B|C>    指定 Section（默认全部）
- *   --timeout=<N>        超时秒数（默认 30）
- *   --verbose            详细输出（打印调试信息）
- *   --dryRun             仅提取不执行
+ * ③ 手动登录 U校园:
+ *    浏览器打开 https://uai.unipus.cn
+ *    输入账号密码登录后，导航到你的课程详情页
+ *    URL 类似: https://ucloud.unipus.cn/app/cmgt/resource-detail/20000975215
+ *    把这个 URL 记下来，后面要用
  *
- * 环境变量:
- *   U_COURSE_URL         课程详情页 URL（优先级高于 --courseUrl）
- *   U_CDP_URL            Chrome CDP 地址
+ * ══════════════════════════════════════════════════════════════
+ * 使用方式
+ * ══════════════════════════════════════════════════════════════
+ *
+ * ▎模式 A: 查看课程状态（不答题，只看进度）
+ * ─────────────────────────────────
+ *   node ucampus-driver.js status --courseUrl=<你的课程URL>
+ *   
+ *   示例输出:
+ *   { "phase": "status", "summary": {"total":44,"completed":20,"pending":3,"locked":21} }
+ *
+ * ▎模式 B: 查看完整学习记录（含各单元得分）
+ * ─────────────────────────────────
+ *   node ucampus-driver.js progress --courseUrl=<你的课程URL>
+ *
+ *   会切换到「学习记录」标签，显示所有单元的进度、得分、学习时长
+ *
+ * ▎模式 C: 提取题目数据 → 给 AI 模型分析答案
+ * ─────────────────────────────────
+ *   第1步 — 提取题目:
+ *     node ucampus-driver.js extract --courseUrl=<你的课程URL>
+ *   
+ *   脚本会自动找到第一个"未开始"的任务，进入并提取题目的完整内容。
+ *   输出格式为 JSON，包含:
+ *     - taskType: 任务类型（mcq / fill_blank / video_mcq / flashcard ...）
+ *     - mcqQuestions: 选择题的题干和选项
+ *     - wordBank: 单词/短语词库
+ *     - droppables: 拖拽填空的数据
+ *     - scoops: 后缀填空的数据
+ *     - fullText: 页面完整文本
+ *
+ *   第2步 — 让 AI 模型分析题目，确定正确答案:
+ *     (人眼看 或 交给 LLM 分析，确定答案数组)
+ *
+ *   第3步 — 执行答案:
+ *     node ucampus-driver.js execute \
+ *       '{"answers":["word1","word2",...],"taskName":"Words in use"}' \
+ *       --courseUrl=<你的课程URL>
+ *
+ * ▎模式 D: 完整两阶段示例（以 Words in use 填空为例）
+ * ─────────────────────────────────
+ *   # 阶段1: 提取题目
+ *   node ucampus-driver.js extract --courseUrl=https://ucloud.unipus.cn/app/cmgt/resource-detail/20000975215
+ *   
+ *   # 模型分析后，得到答案数组
+ *   # 如: ["poised","lavish","instantaneous","tangible","hurdles",
+ *   #      "streamline","detrimental","evoke","hypothesis","escalating"]
+ *   
+ *   # 阶段2: 填入并提交
+ *   node ucampus-driver.js execute \
+ *     '{"answers":["poised","lavish","instantaneous","tangible","hurdles","streamline","detrimental","evoke","hypothesis","escalating"],"taskName":"Words in use"}' \
+ *     --courseUrl=https://ucloud.unipus.cn/app/cmgt/resource-detail/20000975215
+ *
+ *   # 输出结果
+ *   # { "phase": "result", "passed": true, "score": "100",
+ *   #   "hasContinue": true, "hasRetry": false }
+ *
+ * ▎模式 E: MCQ 选择题示例（Quiz / Understanding the text）
+ * ─────────────────────────────────
+ *   # 答案索引 0=A, 1=B, 2=C, 3=D
+ *   node ucampus-driver.js extract --courseUrl=<你的URL>
+ *   # 分析得出答案: [2, 0, 0, 1, 3] 表示 C, A, A, B, D
+ *   node ucampus-driver.js execute \
+ *     '{"answers":[2,0,0,1,3],"taskName":"Quiz"}' \
+ *     --courseUrl=<你的URL>
+ *
+ * ▎模式 F: 视频+MCQ（Critical thinking skill）
+ * ─────────────────────────────────
+ *   # 脚本会自动: mute视频 → 16x播放 → seek到末尾 → 轮询等待MCQ出现
+ *   node ucampus-driver.js execute \
+ *     '{"answers":[0,1,2,3],"taskName":"Critical thinking skill","taskType":"video_mcq"}' \
+ *     --courseUrl=<你的URL>
+ *
+ * ══════════════════════════════════════════════════════════════
+ * 命令行参数参考
+ * ══════════════════════════════════════════════════════════════
+ *
+ *   --courseUrl=<URL>    课程详情页 URL
+ *                        （默认用脚本内的 CONFIG.courseUrl，
+ *                          推荐每次显式传入以避免出错）
+ *   --cdpUrl=<URL>       Chrome CDP 地址
+ *                        （默认 http://127.0.0.1:9222）
+ *   --section=<A|B|C>    限定指定 Section 内的任务
+ *   --verbose            打印详细调试信息
+ *   --dryRun             仅提取/检测，不执行任何操作
+ *
+ * ══════════════════════════════════════════════════════════════
+ * 环境变量（替代 --courseUrl 和 --cdpUrl）
+ * ══════════════════════════════════════════════════════════════
+ *
+ *   export U_COURSE_URL="https://ucloud.unipus.cn/app/cmgt/resource-detail/20000975215"
+ *   export U_CDP_URL="http://127.0.0.1:9222"
+ *   # 设置后可直接运行（不需要每次传入参数）:
+ *   node ucampus-driver.js extract
+ *
+ * ══════════════════════════════════════════════════════════════
+ * 常见问题
+ * ══════════════════════════════════════════════════════════════
+ *
+ * ❌ "Cannot connect to Chrome CDP"
+ *    → Chrome 没启动或 remote-debugging-port 未设置
+ *    修复: google-chrome-stable --remote-debugging-port=9222 ...
+ *
+ * ❌ 页面只显示白屏/CSS（微前端没加载）
+ *    → 等待 20 秒会自动重试，如果一直失败:
+ *      手动刷新页面，或先访问百度再跳转到课程页
+ *
+ * ❌ 提交后显示"返回修改"
+ *    → 脚本会尝试重试（最多 4 次）
+ *      如果一直失败：手动检查答案是否正确
+ *
+ * ❌ "还有N道题没做"
+ *    → React state 没更新。脚本已处理此问题
+ *      如果仍有此提示：联系开发者修复
+ *
+ * ❌ ERR_CONNECTION_CLOSED
+ *    → Chrome 代理问题。启动时加 --no-proxy-server
+ *
+ * ══════════════════════════════════════════════════════════════
+ * 支持的U校园任务类型
+ * ══════════════════════════════════════════════════════════════
+ *
+ *   ✅ Quotation / Text A/B    自动阅读，导航离开即完成
+ *   ✅ Preview / Viewing       视频 mute + seek 到末尾
+ *   ✅ Vocabulary              闪卡自动翻页
+ *   ✅ Quiz / MCQ选择题        按索引 0=A 1=B 2=C 3=D
+ *   ✅ Words in use            input 填空
+ *   ✅ Expressions in use      短语搭配填空（含多词短语）
+ *   ✅ Banked cloze            拖拽填空（data-rbd-droppable-id）
+ *   ✅ Word building Practicing 词根词缀填空
+ *   ✅ Collocation Practicing  后缀填空（data-scoop-index）
+ *   ✅ Sentence structure      textarea 主观题
+ *   ✅ Critical thinking       textarea 主观题
+ *   ✅ Critical thinking skill 视频+MCQ
+ *   ✅ Discussion              讨论区发帖
+ *   ✅ Review & check          自评表格
+ *   ✅ Unit test               链式子任务（"继续学习"导航）
+ *   ✅ Translation             英译中+中译英
+ *   ✅ Stories of China        阅读+选择题+翻译（非必修）
+ *
+ * ══════════════════════════════════════════════════════════════
+ * 适合不同课程的方法
+ * ══════════════════════════════════════════════════════════════
+ *
+ *   本脚本适用于任何 U校园 AI 版课程，只需要更改 courseUrl：
+ *   1. 在浏览器中打开你的课程详情页
+ *   2. 复制 URL（resource-detail/xxx 形式）
+ *   3. 用 --courseUrl=<新URL> 运行
+ *   无需修改脚本代码！
+ *
+ *   注意：不同课程的 taskItemInnerLayout 等 class 名
+ *   如果一致，则直接可用。如果不同，需要微调选择器。
  */
 
 // =====================================================================
 // 配置区 — 所有可自定义参数
+// 提示: 最好用命令行参数 --courseUrl=... 或环境变量 U_COURSE_URL
 // =====================================================================
 const CONFIG = {
   // Chrome CDP 连接
