@@ -15,6 +15,8 @@
 | 查看架构约束 | [architecture-constraints/README.md](architecture-constraints/README.md) |
 | 查看报错表（已知问题和修复） | [error-registry/README.md](error-registry/README.md) |
 | 使用论文/报告写作体系 | [paper-writing/README.md](paper-writing/README.md) |
+| 用 Claude Code + DeepSeek 提 PR | [agent-team/claude-code-pr-workflow.md](agent-team/claude-code-pr-workflow.md) |
+| 用 gh aw 自动 PR（Markdown→YAML） | [agent-team/claude-code-pr-workflow.md](agent-team/claude-code-pr-workflow.md) |
 
 ## 体系结构
 
