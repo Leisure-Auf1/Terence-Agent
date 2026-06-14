@@ -248,6 +248,100 @@ Guidance Agent = 消息总线
   记入 error-registry: CTX_OVERLOAD
 ```
 
+### 2.1.1 🆕 JSON 通信协议 (Agent Message Protocol)
+
+> **原则:** Agent 之间不通过自然语言对话，通过标准化的 JSON 消息交换信息。
+> 每条消息是一个 JSON 行，写入共享消息队列文件 `~/.hermes/tasks/<task-id>/messages.jsonl`。
+
+#### 消息格式
+
+```json
+{
+  "msg_id": "msg_001",
+  "type": "task_complete | error | request_review | status_update | artifact_ready | checkpoint",
+  "sender": "developer | executor | debugger | logger | guidance",
+  "target": "guidance | debugger | logger | *",
+  "timestamp": "2026-06-14T01:20:00Z",
+  "payload": {
+    "task_id": "任务ID",
+    "phase": "当前阶段",
+    "status": "success | failure | in_progress | blocked",
+    "summary": "2-3句完成摘要",
+    "artifacts": ["文件路径1", "文件路径2"],
+    "errors": [{"code": "错误码", "detail": "错误描述"}],
+    "next": "下一步建议动作"
+  },
+  "context": {
+    "checkpoint": "上一个checkpoint文件路径",
+    "session_cursor": "用于跟踪会话位置的标记"
+  }
+}
+```
+
+#### 消息类型
+
+| type | 触发时机 | sender | target |
+|:-----|:---------|:-------|:-------|
+| `task_complete` | Agent 完成任务 | developer/executor/debugger | guidance |
+| `error` | Agent 遇到无法处理的错误 | 任何Agent | debugger |
+| `request_review` | 需要另一个Agent审核 | developer | reviewer/guidance |
+| `status_update` | 报告进度 | 任何Agent | logger |
+| `artifact_ready` | 产出物已完成 | developer/executor | guidance |
+| `checkpoint` | 阶段 checkpoint | 任何Agent | * |
+
+#### 消息队列文件格式 (JSON Lines)
+
+```jsonl
+{"msg_id":"msg_001","type":"task_complete","sender":"developer","target":"guidance","timestamp":"2026-06-14T01:20:00Z","payload":{"task_id":"lab3","phase":"coding","status":"success","summary":"完成C代码编写","artifacts":["~/lab3/fork.c","~/lab3/Makefile"],"errors":[],"next":"等待审核"},"context":{"checkpoint":"task-progress/tasks/lab3/checkpoint_01.md","session_cursor":"coding_done_v1"}}
+{"msg_id":"msg_002","type":"status_update","sender":"logger","target":"*","timestamp":"2026-06-14T01:20:01Z","payload":{"task_id":"lab3","phase":"coding","status":"success","summary":"Developer 完成编码, 已记录"}}
+{"msg_id":"msg_003","type":"request_review","sender":"guidance","target":"developer","timestamp":"2026-06-14T01:20:05Z","payload":{"task_id":"lab3","phase":"review","status":"in_progress","summary":"请审核 Developer 的输出","artifacts":["~/lab3/fork.c"],"errors":[],"next":"run_checklist"}}
+```
+
+#### 读写规则
+
+```yaml
+写入规则:
+  - 每个关键步骤完成后必须写一条 JSON 消息 (append)
+  - 消息写入后才视为"完成"
+  - 消息内容必须 JSON 格式有效 (可用 python -m json.tool 验证)
+  - 禁止写入非结构化文本 (自然语言描述放 summary 字段即可)
+
+读取规则:
+  - 新 Agent 启动时读取消息队列最后 3 条消息
+  - 批量消息优先读取 type=checkpoint 的最新消息
+  - 读取后不删除 (append-only, 方便复盘)
+
+位置规则:
+  - 消息队列: ~/.hermes/tasks/<task-id>/messages.jsonl
+  - checkpoint 文件: ~/.hermes/tasks/<task-id>/checkpoints/<编号>.md
+  - 目录由 Guidance Agent 初始化, Logger 维护
+```
+
+#### 完整通信示例 (OS实验报告场景)
+
+```yaml
+# Phase 1: Developer 完成任务
+developer → messages.jsonl (append):
+  type: task_complete, target: guidance
+  payload: { phase: coding, status: success, artifacts: [fork.c], summary: "FCFS调度算法实现完成" }
+
+# Phase 2: Logger 记录
+logger → messages.jsonl (append):
+  type: status_update, target: "*"
+  payload: { phase: coding, status: success, summary: "Developer 完成, 记录进度" }
+
+# Phase 3: Guidance 指派下一步
+guidance → messages.jsonl (append):
+  type: checkpoint, target: "*"
+  payload: { phase: review, status: in_progress, next: "Executor: 开终端窗口" }
+
+# Phase 4: Executor 读取最新消息, 知道该做什么
+executor → 读取 messages.jsonl 最新3条:
+  - 上一条是 checkpoint: phase=review, next="开终端窗口"
+  - 上上条是 task_complete: artifacts=[fork.c]
+→ Executor 知道: 打开终端, 展示 fork.c 的编译和运行
+```
+
 ---
 
 ## 3. 技能分配规则 (Skill Allocation Rules)
@@ -605,6 +699,8 @@ L3 Checkpoint恢复: 部分完成→从最后checkpoint继续
 L4 用户转交:       系统性失败→整理结果转交用户
 ```
 
+> 📚 **参考文件:** `references/advanced-orchestration-patterns.md` — 完整研究来源、框架代码示例、CrewAI 角色设计、决策矩阵、内存层级
+
 ---
 
 ## 9. 约束
@@ -623,6 +719,8 @@ L4 用户转交:       系统性失败→整理结果转交用户
        - 违反 → LOGGER_MISSING → 记入 error-registry
 约束 9: 移交时只传 artifact + 关键摘要，不传全部上下文
        - 违反 → CTX_CHECKPOINT_MISSING → 记入 error-registry
+约束 10: 关键步骤完成后必须写入 JSON 消息后才视为"完成"
+       - 违反 → JSON_MESSAGE_MISSING → 记入 error-registry
 
 ---
 
