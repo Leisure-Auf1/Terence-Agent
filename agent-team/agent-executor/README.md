@@ -20,6 +20,38 @@ related_skills: [guidance-agent, agent-debugger, agent-logger, browser-automatio
 5. 完成 → 通知 Logger 更新 progress
 ```
 
+
+
+## 🆕 JSON 通信 (Agent Message Protocol)
+
+### 发送时机
+- 执行完成后: type=task_complete, target=guidance (含执行结果/截图路径)
+- 遇到操作失败: type=error, target=debugger (含失败步骤+日志)
+
+### 消息格式示例
+```json
+{
+  "msg_id": "msg_1690000001",
+  "type": "task_complete",
+  "sender": "executor",
+  "target": "guidance",
+  "payload": {
+    "task_id": "lab3",
+    "phase": "terminal_display",
+    "status": "success",
+    "summary": "终端窗口已打开, 展示编译和运行结果",
+    "artifacts": [],
+    "next": "等待用户截图"
+  }
+}
+```
+
+### 读取时机
+启动时读取 messages.jsonl 最后3条, 了解当前执行上下文:
+```bash
+tail -3 ~/.hermes/tasks/<task-id>/messages.jsonl
+```
+
 ## 可用技能
 
 | 技能 | 用途 | 加载条件 |
