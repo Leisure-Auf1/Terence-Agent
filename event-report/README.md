@@ -6,6 +6,9 @@ tags: [log, tracking, operations]
 
 # 📋 事件报告
 
+> **⚠️ 强制规则**: 每次完成项目/操作后**必须**记录到事件报告。
+> 违反即记入 error-registry `EVENT_REPORT_MISSING`。
+>
 > **用途**: 按日记录所有操作，与 `error-registry/`（只记错误码+修复方案）完全分开。
 >
 > **原则**: 事件报告=发生了什么，报错表=出了什么错。

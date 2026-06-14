@@ -25,6 +25,14 @@
 │       ├── venv/
 │       └── artifacts/
 │
+├── AGENTS.md                 ← 📋 仓库入口目录（Progressive Disclosure）
+├── .hermes/                  ← 🔧 检查体系
+│   ├── risk-contract.json    ← 风险合同（机器可读）
+│   ├── checkpoint.template.md← Context Checkpoint 模板
+│   └── preflight-*.md        ← Preflight 检查摘要（自动生成）
+├── scripts/
+│   └── check-preflight.sh    ← Preflight 机械检查脚本
+├── paper-writing/            ← 📝 论文/报告写作体系 (模板+工作流+Agent定义)
 ├── event-report/            ← 📋 事件报告（按日操作记录）
 ├── error-registry/          ← 报错表（共用的认知记忆）
 ├── architecture-constraints/← 架构约束

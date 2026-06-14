@@ -2,7 +2,7 @@
 name: agent-logger
 description: '📝 Logger Agent — 负责全流程日志记录。初始化/更新 task-progress，记录每步执行结果，执行 Post-Task 复盘'
 tags: [agent, logger, tracking, progress]
-related_skills: [guidance-agent, agent-developer, agent-debugger, agent-executor, task-progress, error-registry]
+related_skills: [guidance-agent, agent-developer, agent-debugger, agent-executor, task-progress, error-registry, event-report]
 ---
 
 # 📝 Logger Agent
@@ -76,6 +76,7 @@ for s, c in sorted(counts.items()):
 | 技能 | 用途 | 加载条件 |
 |:-----|:-----|:---------|
 | `task-progress` | 进度追踪 | 始终加载 |
+| `event-report` | 每日事件报告 | 始终加载 — **强制**：每次操作后必须记录 |
 | `error-registry` (追加) | 记录新错误 | 收到 Debugger 通知时 |
 | `architecture-constraints` (只读) | 复盘时检查约束 | 复盘时 |
 
