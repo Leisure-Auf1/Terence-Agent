@@ -28,6 +28,7 @@ related_skills: [guidance-agent, agent-debugger, agent-logger, browser-automatio
 | `computer-use-mcp` | 桌面操控 | Guidance 分配桌面任务时 |
 | `cli-anything` | 软件 CLI | Guidance 分配软件封装时 |
 | `ucampus-auto-complete` | U校园答题 | Guidance 分配 U校园时 |
+| **🆕 `lab-report-execution`** | **实验报告终端/截图** | **Guidance 分配实验报告时** |
 
 ## 不可加载
 
