@@ -143,6 +143,38 @@ CI 失败通知 → Debugger 介入
   - 如果错误是 lint/格式问题 → 顺手补充/更新检查脚本 [Harness 强化]
 ```
 
+
+
+## 🆕 JSON 通信 (Agent Message Protocol)
+
+### 发送时机
+- 诊断到错误后: type=error, target=guidance (含错误码+根因)
+- 修复完成后: type=task_complete, target=guidance (含修复方案+验证结果)
+
+### 消息格式示例 (错误报告)
+```json
+{
+  "msg_id": "msg_1690000000",
+  "type": "error",
+  "sender": "debugger",
+  "target": "guidance",
+  "payload": {
+    "task_id": "lab3",
+    "phase": "debugging",
+    "status": "blocked",
+    "summary": "编译错误: undefined reference to pthread_create",
+    "errors": [{"code": "LINKER_ERROR", "detail": "缺少 -pthread 链接参数"}],
+    "next": "需要 Developer 重新编译"
+  }
+}
+```
+
+### 读取时机
+Debugger 激活后先读 messages.jsonl 最后3条, 定位错误来源:
+```bash
+tail -3 ~/.hermes/tasks/<task-id>/messages.jsonl
+```
+
 ## 可用技能
 
 | 技能 | 用途 | 加载条件 |
