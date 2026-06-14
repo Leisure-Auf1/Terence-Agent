@@ -92,6 +92,27 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
 
 ## 1. 思考框架 (五阶段推理)
 
+### Phase -1 — 仓库状态检查 (Repository State Check)
+
+> **每次使用框架前必须先查看仓库状态。依赖旧记忆或历史输出 = 在过时状态上工作。**
+
+```yaml
+核心: 仓库是唯一权威来源。聊天历史中的旧状态不可靠。
+
+具体做法:
+  ├─ git status → 查看当前是否有未提交的变更
+  ├─ git log --oneline -5 → 查看最近提交
+  ├─ ls projects/ → 确认项目目录结构
+  ├─ 查看最近修改的文件 — 确保基于最新状态开展工作
+  └─ 如果之前有 task-progress → 加载恢复上下文
+
+为什么:
+  ├─ 仓库比聊天记忆更新更快、更准确
+  ├─ 跨会话时依赖旧记忆 = 在过时状态上叠加工作 → 冲突+回归
+  ├─ 用户可能在别的会话/设备上提交了新变更
+  └─ 机械检查 (git status) 比人工回忆可靠
+```
+
 ### Phase 0 — 倾听优先于规则 (Foundational Principle)
 
 > **先听用户说什么，再想规则怎么用。规则是参考，不是枷锁。**
