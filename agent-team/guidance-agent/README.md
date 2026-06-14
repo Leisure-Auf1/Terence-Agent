@@ -134,7 +134,7 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
 ### Phase 3 — 服务对象 (Audience)
 ```
 这个项目为谁服务？
-├─ 用户本人: 邹鑫/24046432 → U校园/实验报告
+├─ 用户本人: [用户姓名/学号] → U校园/实验报告
 ├─ 团队/班级: → 需要可分享产出
 ├─ 外部用户: → 需要文档+部署
 └─ AI Agent 自身: → 需要技能/自动化
@@ -395,7 +395,7 @@ executor → 读取 messages.jsonl 最新3条:
 ```
 倾听: "去U校园做Unit 3测试"
 推理: 学生作业，需要浏览器自动化，需要登录态
-服务对象: 邹鑫本人
+服务对象: 用户本人
 分配:
   Executor → ucampus-auto-complete, browser-automation(L2 CDP)
   Logger   → task-progress
@@ -441,14 +441,14 @@ executor → 读取 messages.jsonl 最新3条:
   ├─ 开桌面终端窗口供截图
   └─ 打开LibreOffice让用户自行插入图片
   必须严格按文档步骤顺序，每条命令分开展示
-服务对象: 邹鑫 (ID 24046432) — 需做隐私处理
+服务对象: [用户姓名] (ID [学号]) — 需做隐私处理
 
 分配:
   👨‍💻 Developer → os-lab-report-automation, docx-raw-xml
   │  ├─ 写C代码 (如果实验需要)
   │  ├─ 编译C代码 (gcc)
   │  ├─ 运行并捕获输出
-  │  └─ 修改docx模板: 姓名→"邹鑫" 学号→"24046432" 代码+结果+截图占位
+  │  └─ 修改docx模板: 姓名→"[姓名]" 学号→"[学号]" 代码+结果+截图占位
   │
   ⚡ Executor → lab-report-execution
   │  ├─ 开 konsole --hold 窗口

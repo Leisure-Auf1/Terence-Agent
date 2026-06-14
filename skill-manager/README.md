@@ -116,7 +116,7 @@ related_skills: [architecture-constraints, error-registry, task-progress, browse
     → 路由: cli-anything + cli-anything-hermes + error-registry
     → 禁止加载: browser-automation, computer-use-mcp
 
-  elif 关键词匹配 "实验报告" or "操作系统" or "邹鑫" or "24046432":
+  elif 关键词匹配 "实验报告" or "操作系统" or "[用户姓名]" or "[学号]":
     → 路由: 实验报告流程 (阅兵时看 memory)
     → 禁止加载: L2-L4 全部自动化工具
 
