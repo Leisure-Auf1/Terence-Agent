@@ -27,6 +27,7 @@ related_skills: [error-registry, task-progress, browser-automation, computer-use
 10. 上下文重置 — 大步骤间做 context checkpoint，不拖大 context [Harness]
 11. 生成vs评估分离 — 创造者不审自己产出 [Harness]
 12. 实现项目必须走 PR 流程 — 分支→提交→PR→合并 [PR]
+13. Agent 之间不得互调工具 — 所有 Agent 间通信通过 Guidance 中继 [Agent Team]
 ```
 
 ## 0.3 Harness Engineering 附加约束
@@ -105,6 +106,25 @@ related_skills: [error-registry, task-progress, browser-automation, computer-use
   ❌ 批量文件变更直接 push 到 main
   ❌ PR 没有自审就合并
   ❌ PR 标题不含 type(scope)
+```
+
+### 0.3.5 Agent 间协作约束 (Inter-Agent Communication)
+
+```
+原则: Agent 之间不直接对话 — 所有通信通过 Guidance Agent 协调。
+依据: guidance-agent S2.1 — 消息总线模式
+
+约束:
+  1. Developer 不调用 Executor 的浏览器/桌面/CLI 工具
+  2. Executor 不调用 Developer 的编码工具
+  3. 所有 Agent 的产出通过 Guidance 中继给 Logger
+  4. Debugger 修复错误后必须通知 Guidance 更新 error-registry
+  5. 每个 Agent 完成关键步骤后必须通知 Logger
+
+禁止:
+  ❌ Agent 之间互调工具 (CROSS_AGENT_TOOL_CALL)
+  ❌ 完成关键步骤后不通知 Logger (LOGGER_MISSING)
+  ❌ 移交时传全部上下文而非 artifact 摘要 (CTX_CHECKPOINT_MISSING)
 ```
 
 ---
@@ -289,6 +309,8 @@ post-check:
 | **🆕 批量文件变更未走 PR** | 记入 error-registry `SKIP_PR_GATE` |
 | **🆕 跳过机械检查直接审核** | 记入 error-registry `SKIP_MECHANICAL_CHECK` |
 | **🆕 大步骤间未做 context checkpoint** | 记入 error-registry `CTX_CHECKPOINT_MISSING` |
+| **🆕 Agent 之间互调工具** | 记入 error-registry `CROSS_AGENT_TOOL_CALL` |
+| **🆕 完成关键步骤后未通知 Logger** | 记入 error-registry `LOGGER_MISSING` |
 
 ---
 

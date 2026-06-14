@@ -533,6 +533,80 @@ Agent Team 的 Web UI 可视化、群聊、任务看板需映射到 Hermes Web U
 
 ---
 
+## 8. 🆕 高级编排模式 (Industry Best Practices 2026)
+
+> **研究来源:** ToolHalla、LushBinary、SourceBae 等行业 2026 年多智能体编排模式分析
+> **核心发现:** 我们的 Agent Team 已经覆盖了 4 种行业标准模式中的 3 种。
+
+### 8.1 行业四大编排模式 vs 我们的实现
+
+```
+行业模式          我们的实现                 状态
+─────────────────────────────────────────────────────
+Triage (路由)      Guidance Phase 1-4        ✅ 已有
+   轻量分类器→路由到专家  倾听→推理→分配→移交
+
+Supervisor (主管)   Guidance Agent 核心       ✅ 已有
+   中央Agent委派+审核   指挥官分配+校验+复盘
+
+Fan-out/Fan-in    delegate_task batch mode   ✅ 已有
+   (并行/聚合)        并行 Worker + Integrator
+
+Pipeline (流水线)  多Agent开发管道            ✅ 已有
+   顺序执行,环环相扣   Planner→Worker→Integrator→Reviewer
+```
+
+### 8.2 State Management — task-progress 共享状态层
+
+```
+┌──────────────────────────────────────────────────┐
+│                 共享状态层 (Shared State)           │
+│  task-progress (Hermes SQLite)                     │
+│  ├─ 当前阶段: phase name                          │
+│  ├─ 所有产出清单: 文件路径+描述                     │
+│  ├─ 所有决策记录: 接口/命名/约定                    │
+│  └─ 所有错误记录: error-registry 引用               │
+│                                                    │
+│  读写规则: Logger 写, 所有 Agent 读                 │
+│  每步完成写 checkpoint, 新 Agent 先读最新            │
+└──────────────────────────────────────────────────┘
+```
+
+### 8.3 Quality Gates — 阶段间质量门控
+
+Pipeline with per-stage validation:
+
+```
+[Design] → Gate 1 → [Impl] → Gate 2 → [Review] → Gate 3 → [Debug/PR]
+              ↑ FAIL                ↑ FAIL
+```
+
+| Gate | 阶段 | 检查项 |
+|:-----|:-----|:-------|
+| 1 | Design→Impl | spec.md存在? 接口完整? 约束遵守? |
+| 2 | Impl→Review | 文件间匹配? 命名不冲突? spec全覆盖? |
+| 3 | Review→Debug | Spec合规? 代码质量? 安全? 可用性? |
+
+### 8.4 Human-in-the-Loop 模式
+
+```yaml
+审批门:   高风险操作→暂停→显示预览→等用户确认
+避让:     无法决策→给选项+推理→让用户选
+并行确认: 关键输出→快速确认后继续
+学习纠正: 用户指错→记入 error-registry→下次避免
+```
+
+### 8.5 Fault Tolerance — 容错层级
+
+```yaml
+L1 Agent内重试:    临时错误→自重试3次
+L2 Agent间降级:    方法错误→Guidance换Agent
+L3 Checkpoint恢复: 部分完成→从最后checkpoint继续
+L4 用户转交:       系统性失败→整理结果转交用户
+```
+
+---
+
 ## 9. 约束
 
 ```
