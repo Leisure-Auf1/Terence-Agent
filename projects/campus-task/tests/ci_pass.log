@@ -1,0 +1,28 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.5, pytest-9.0.3, pluggy-1.6.0 -- /usr/bin/python
+cachedir: .pytest_cache
+rootdir: /home/Terence/.local/share/Terence-Agent/campus-task
+configfile: pyproject.toml
+collecting ... collected 19 items
+
+tests/test_campus_task.py::TestAdd::test_add_success PASSED              [  5%]
+tests/test_campus_task.py::TestAdd::test_add_empty_title PASSED          [ 10%]
+tests/test_campus_task.py::TestList::test_list_empty PASSED              [ 15%]
+tests/test_campus_task.py::TestList::test_list_multiple PASSED           [ 21%]
+tests/test_campus_task.py::TestDone::test_done_existing PASSED           [ 26%]
+tests/test_campus_task.py::TestDone::test_done_nonexistent PASSED        [ 31%]
+tests/test_campus_task.py::TestDone::test_done_already_done PASSED       [ 36%]
+tests/test_campus_task.py::TestIdIncrement::test_ids_auto_increment PASSED [ 42%]
+tests/test_campus_task.py::TestPersistence::test_file_created_after_add PASSED [ 47%]
+tests/test_campus_task.py::TestPersistence::test_file_auto_create_empty PASSED [ 52%]
+tests/test_campus_task.py::TestPersistence::test_save_and_reload PASSED  [ 57%]
+tests/test_campus_task.py::TestPersistence::test_corrupted_file PASSED   [ 63%]
+tests/test_campus_task.py::TestModel::test_task_default_status PASSED    [ 68%]
+tests/test_campus_task.py::TestModel::test_task_mark_done PASSED         [ 73%]
+tests/test_campus_task.py::TestFilter::test_filter_pending PASSED        [ 78%]
+tests/test_campus_task.py::TestFilter::test_filter_done PASSED           [ 84%]
+tests/test_campus_task.py::TestFilter::test_filter_no_match PASSED       [ 89%]
+tests/test_campus_task.py::TestIteration::test_sort_by_deadline PASSED   [ 94%]
+tests/test_campus_task.py::TestIteration::test_export_csv PASSED         [100%]
+
+============================== 19 passed in 0.02s ==============================
