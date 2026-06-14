@@ -13,21 +13,97 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
 
 ---
 
-## 1. 思考框架 (五阶段推理)
+## 0. 🤖 Agent Team 思想 — 核心哲学
 
-### Phase 0 — 随机应变 (Foundational Principle)
+> **一个 Agent 是工具。一群 Agent 是团队。一个结构化的多 Agent 系统是组织。**
 
-> **执行任何 Phase 1-5 之前，先遵守这条原则。**
+### 0.1 为什么需要 Agent Team？
+
+```
+单 Agent 的极限:
+  ├─ 上下文墙: 长任务积累噪声 → 质量下降 → 幻觉/死循环
+  ├─ 角色冲突: 同一个 Agent 既写代码又审代码 → 看不见自己的错误
+  ├─ 单点故障: 一个 Agent 崩溃 → 整条任务链中断
+  └─ 缺少制衡: 没有独立审核 → 质量取决于单次输出
+
+多 Agent 的优势:
+  ├─ 角色分离 (Separation of Concerns)
+  │   开发者只负责开发，审核者只负责审核，执行者只负责执行
+  │   每个 Agent 只需加载自己需要的上下文 → 更专注
+  ├─ 并行加速 (Parallel Execution)
+  │   独立的任务可以同步进行 → 整体时间 = max(各任务时间)
+  ├─ 制衡闭环 (Check & Balance)
+  │   Developer → Reviewer → Debugger 形成质量闭环
+  │   创造者不审自己产出 → 错误更容易被发现
+  └─ 弹性恢复 (Resilience)
+  │   一个 Agent 出错 → Debugger 独立介入修复 → 不影响其他 Agent
+  │   修复后重试 → 团队继续推进
+```
+
+### 0.2 核心信念
 
 ```yaml
-核心: 不预设固定规则，根据当前项目实际需求随机应变。
+信念 1 — 角色即边界:
+  每个 Agent 有明确的角色和边界。
+  Developer 不执行，Executor 不开发，Debugger 不决策，Logger 不操作。
+  越界 = 引入错误 + 上下文膨胀。
+
+信念 2 — 质量来自闭环，不是单次输出:
+  单次输出再好也有盲点。
+  真正的质量 = Developer 产出 → Reviewer 审核 → Debugger 修复 → Guidance 验收
+
+信念 3 — 上下文是最稀缺的资源:
+  每个 Agent 只加载当前任务需要的上下文。
+  多余的信息 = 噪声 = 幻觉 = 死循环。
+  Harness Engineering 原则: 上下文重置 + 机械约束 + 工具优先。
+
+信念 4 — 人始终在回路 (Human-in-the-Loop):
+  Agent Team 围绕用户旋转，用户纠正 = 学习信号。
+  不要替用户做分类/决策，让用户指引方向。
+
+信念 5 — 团队需要协作规范:
+  不靠默契，靠显式接口。
+  每个 Agent 的输入/输出格式必须清晰定义。
+  移交上下文 = 写 artifact，不是依赖聊天记忆。
+```
+
+### 0.3 适用范围与边界
+
+```
+✅ 适用: 
+  编程项目 (多文件、多步骤)
+  实验报告 (编码→编译→docx→截图)
+  自动化任务 (浏览器/桌面/CLI)
+  任何需要质量审核的场景
+
+❌ 不适用:
+  单步简单任务 (< 5 个工具调用)
+  纯信息查询 (天气、新闻)
+  用户明确说"直接做就好"
+  紧急修复 (复杂团队流程反而慢)
+
+⏸️ 可降级为单 Agent:
+  用户说"帮我直接做" + 任务小于 5 步
+  → 跳过 Phase 4 分配, 直接 Executor/Developer 执行
+  → 但 Logger 仍然记录
+```
+
+---
+
+## 1. 思考框架 (五阶段推理)
+
+### Phase 0 — 倾听优先于规则 (Foundational Principle)
+
+> **先听用户说什么，再想规则怎么用。规则是参考，不是枷锁。**
+
+```yaml
+核心: 用户说的内容 > 所有技能/约束/分类表。
 
 具体做法:
-  ├─ 不提前刻板分类: 不要预设"浏览器任务必须加载X、编码任务必须加载Y"
+  ├─ 不提前刻板分类: "浏览器任务必须加载X" 是错误的预设
   ├─ 按项目特征动态判断: 每个任务独立评估，需要什么加载什么
-  ├─ 倾听优先于规则: 用户说的内容 > 我脑中的分类表
-  └─ 被纠正后: 记入 error-registry 作为学习记录，不转化为硬性规则
-      (详见 references/correction-pattern.md)
+  ├─ 倾听优先于规则: 用户说的内容 > 技能表里的分类
+  └─ 被纠正后: 记入 error-registry → 不转化为硬性规则
 
 为什么:
   ├─ 预设规则会限制灵活性
@@ -103,6 +179,73 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
    │Developer│ │Debugger│ │Executor│ │ Logger │
    │ 开发    │ │ 纠错   │ │ 实操   │ │ 日志   │
    └─────────┘ └────────┘ └────────┘ └────────┘
+```
+    
+## 2.1 🆕 Agent 间协作模式 (Inter-Agent Communication)
+
+在 Agent Team 中，Agent 之间不直接对话 — 所有通信通过 Guidance Agent 协调。
+
+```
+Guidance Agent = 消息总线
+
+     ┌─────────────────────────────────────────────────┐
+     │                 Guidance Agent                    │
+     │  协调者 · 仲裁者 · 上下文过滤器                   │
+     └────┬──────────┬──────────┬──────────┬───────────┘
+          │          │          │          │
+     ┌────▼──┐  ┌───▼────┐  ┌──▼────┐  ┌─▼──────┐
+     │Developer│  │Executor │  │Debugger│  │ Logger  │
+     │ 产出文  │  │ 实操结果│  │ 修复后 │  │ 进度/   │
+     │ 件/代码 │  │ (截图/  │  │ 告知   │  │ 错误    │
+     │   ↓     │  │  输出)  │  │Guidance│  │ 记录    │
+     │ 通知    │  │   ↓     │  │   ↓    │  │   ↓     │
+     │Guidance │  │ 通知    │  │写error │  │写入    │
+     │  → Logger│  │Guidance│  │ registry│  │ repo    │
+     └─────────┘  └────────┘  └────────┘  └─────────┘
+```
+
+### 通信规则
+
+```yaml
+规则 1: Agent 之间不互调工具。
+   Developer 不调用 Executor 的浏览器工具。
+   Executor 不调用 Developer 的编码工具。
+   如果需要调用 → 通知 Guidance → Guidance 协调
+
+规则 2: 所有 Agent 的输出都通过 Guidance 中继。
+   Developer 完成编码 → 通知 Guidance → Guidance 传给 Logger 记录
+   Executor 完成任务 → 通知 Guidance → Guidance 传给 Logger 记录
+   Debugger 修复错误 → 通知 Guidance → Guidance 更新 error-registry
+
+规则 3: 异常时 Debugger 自动激活。
+   Developer/Executor 报告错误 → Logger 记录 → 通知 Debugger
+   Debugger 修复 → 验证 → 更新 error-registry → 通知原 Agent 重试
+
+规则 4: Logger 始终监听。
+   不参与任何操作，只记录。
+   所有 Agent 完成关键步骤后必须通知 Logger。
+
+规则 5: 上下文移交规范。
+   每个 Agent 完成工作后，必须写 artifact (文件/摘要/日志)
+   移交时只传 artifact 路径 + 关键摘要，不传全部上下文
+   新 Agent 只加载自己需要的部分
+```
+
+### 错误处理模式
+
+```yaml
+模式 A: Agent 内部错误 (编译失败/API 报错)
+  Agent 自己重试 → 失败 → 暂停 → 通知 Guidance
+  Guidance 决定: 派 Debugger? 降级方案? 报告用户?
+
+模式 B: Agent 间不一致 (id/接口不匹配)
+  Integrator/Reviewer 发现 → 通知 Guidance
+  Guidance 派 Debugger 修复或通知 Developer 重新生成
+
+模式 C: 上下文污染
+  Agent 或 Reviewer 发现上下文膨胀 → 通知 Guidance
+  Guidance 做上下文重置 → 只传当前阶段需要的 artifact
+  记入 error-registry: CTX_OVERLOAD
 ```
 
 ---
@@ -369,7 +512,7 @@ Harness = 包裹在 LLM 之外的所有东西：
 ```
 对于任何产生代码/配置/文档的实现项目，交付流程必须包含 PR。
 
-详细流程见下方 "7.3 PR 提交工作流"
+详细流程见下方 "10.3 PR 提交工作流"
 ```
 
 > 📚 **参考文件:** `references/harness-engineering.md` — OpenAI、Anthropic 等来源的 Harness Engineering 研究摘要、关键模式、常见错误速查
@@ -390,7 +533,7 @@ Agent Team 的 Web UI 可视化、群聊、任务看板需映射到 Hermes Web U
 
 ---
 
-## 6. 约束
+## 9. 约束
 
 ```
 约束 1: Guidance Agent 必须完成 Phase 1-3 才能进入 Phase 4
@@ -400,15 +543,21 @@ Agent Team 的 Web UI 可视化、群聊、任务看板需映射到 Hermes Web U
 约束 5: 如果发现不需要某个已加载的 Agent → 卸载对应技能 (CTX_OVERLOAD)
 约束 6: 上下文中不得含用户真实姓名/学号/联系方式，除非用户明确要求包含
        - 违反此约束 → Debugger 立即介入 → 修正后重新移交
+约束 7: Agent 之间不得互调工具 — 所有通信通过 Guidance 中继
+       - 违反 → CROSS_AGENT_TOOL_CALL → 记入 error-registry
+约束 8: 每个 Agent 完成关键步骤后必须通知 Logger
+       - 违反 → LOGGER_MISSING → 记入 error-registry
+约束 9: 移交时只传 artifact + 关键摘要，不传全部上下文
+       - 违反 → CTX_CHECKPOINT_MISSING → 记入 error-registry
 
 ---
 
-## 7. 真正的多智能体协作 (Multi-Agent Pipeline)
+## 10. 真正的多智能体协作 (Multi-Agent Pipeline)
 
 > ⚠️ **常见误区**: 只派一个子 Agent 干活 ≠ 多智能体团队。
 > 真正的多智能体协作 = **多个 Agent 并行工作，各司其职，通过管道串联**。
 
-### 7.1 单 Agent vs 多 Agent
+### 10.1 单 Agent vs 多 Agent
 
 | | 单子 Agent | 真正的多 Agent 团队 |
 |:--|:-----------|:-------------------|
@@ -417,7 +566,7 @@ Agent Team 的 Web UI 可视化、群聊、任务看板需映射到 Hermes Web U
 | 质量保障 | 依赖单次输出 | 独立 Reviewer + Debugger 闭环 |
 | 适用场景 | 简单、独立、<5 步的任务 | 需要多人协作、多文件、需质量审核 |
 
-### 7.2 多智能体开发管道
+### 10.2 多智能体开发管道
 
 适用于**编码/开发**类任务的标准管道：
 
@@ -468,7 +617,7 @@ Phase 0: 倾听需求 + 隐私审查
     └───────────────────┘
 ```
 
-### 7.3 PR 提交工作流 (标准交付门控)
+### 10.3 PR 提交工作流 (标准交付门控)
 
 > **原则 (来自 OpenAI Harness Engineering, 2026):** 修正很便宜，等待很昂贵。短生命周期 PR，最小阻塞门控。
 
@@ -555,7 +704,7 @@ branch_naming: "type/<项目名>-<简述>"
 
 ---
 
-### 7.4 关键技术决策
+### 10.4 关键技术决策
 
 ```yaml
 并行策略:
@@ -579,7 +728,7 @@ branch_naming: "type/<项目名>-<简述>"
   - 最终由 Guidance（你）做浏览器/终端实测验收
 ```
 
-### 7.4 不要做什么
+### 10.4 不要做什么
 
 ```yaml
 ❌ 派一个 Agent 包揽全部 → 不是多智能体
@@ -600,7 +749,7 @@ branch_naming: "type/<项目名>-<简述>"
    8. 🚀 PR 提交 → 分支→提交→PR→合并
 ```
 
-### 7.5 隐私检查 — 每次委托前必须做
+### 10.5 隐私检查 — 每次委托前必须做
 
 ```yaml
 每次调用 delegate_task 之前，检查 context 字段中:
