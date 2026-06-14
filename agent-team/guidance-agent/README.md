@@ -122,9 +122,9 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
 | Agent | 可加载的技能 | 不可加载 |
 |:------|:------------|:---------|
 | **Guidance** | skill-manager, architecture-constraints, error-registry, 所有 Agent 技能 | — |
-| **Developer** | 编码相关 (无特殊技能) | browser-automation, computer-use-mcp, cli-anything |
+| **Developer** | 编码相关 (os-lab-report-automation, docx-raw-xml) | browser-automation, computer-use-mcp, cli-anything |
 | **Debugger** | error-registry, architecture-constraints | browser-automation, computer-use-mcp, cli-anything |
-| **Executor** | browser-automation, computer-use-mcp, cli-anything, u-campus 技能 | 架构/治理技能 |
+| **Executor** | browser-automation, computer-use-mcp, cli-anything, u-campus 技能, lab-report-execution | 架构/治理技能 |
 | **Logger** | task-progress | 其他所有 |
 
 ---
@@ -186,6 +186,79 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
   Logger   → task-progress
   不需要   → Developer, Debugger
 ```
+---
+
+### 示例 D: 🧪 OS 实验报告 (Agent Team 全流程)
+
+> **触发条件**: 用户说"做实验报告"、"写报告"、"实验X"、"按照文档步骤操作"
+
+这是 Agent Team **全栈协作** 的典型案例 — 涉及全部 4 个 Agent。
+
+```
+倾听: "帮我做OS实验三——进程调度报告"
+推理: 
+  学生作业，需要:
+  ├─ 编写/提取C代码
+  ├─ 编译运行并捕获输出
+  ├─ 修改docx模板 (填姓名/学号/代码/结果)
+  ├─ 开桌面终端窗口供截图
+  └─ 打开LibreOffice让用户自行插入图片
+  必须严格按文档步骤顺序，每条命令分开展示
+服务对象: 邹鑫 (ID 24046432) — 需做隐私处理
+
+分配:
+  👨‍💻 Developer → os-lab-report-automation, docx-raw-xml
+  │  ├─ 写C代码 (如果实验需要)
+  │  ├─ 编译C代码 (gcc)
+  │  ├─ 运行并捕获输出
+  │  └─ 修改docx模板: 姓名→"邹鑫" 学号→"24046432" 代码+结果+截图占位
+  │
+  ⚡ Executor → lab-report-execution
+  │  ├─ 开 konsole --hold 窗口
+  │  │   一个报告合并到一个终端，按文档分节
+  │  │   每步标注 "命令：xxx" + 实际执行结果
+  │  └─ 打开 LibreOffice 展示修改后的 docx
+  │
+  🔧 Debugger → error-registry (按需)
+  │  ├─ 编译出错 → 查找链接库/标准
+  │  └─ docx XML 损坏 → 修复
+  │
+  📝 Logger → task-progress
+     ├─ 初始化进度: "开始实验三报告"
+     ├─ Developer 每一步 → 更新
+     ├─ Executor 开终端 → 记录
+     ├─ 🆕 PR 提交 → 实验报告文件变更走 PR
+     └─ 完成 → 复盘
+
+执行顺序:
+  Phase 1: Developer 写代码+编译+修改docx
+  Phase 2: Executor 开终端 (读取 Developer 的产出)
+  Phase 3: Executor 打开 LibreOffice
+  Phase 4: (用户自行截图插入)
+  Phase 5: Logger 复盘 → PR 提交 (如果产出物存入仓库)
+```
+
+#### 实验报告执行原则
+
+```yaml
+report_structure:
+  - 严格按文档步骤顺序执行
+  - 每条命令分开展示 (命令: xxx → 结果)
+  - 一个报告合并到一个 konsole --hold 窗口
+  - 一报告完成后再下一个 (不并行)
+  - 用户自行截图插入 LibreOffice (不自动处理图片)
+
+privacy:
+  - 上下文摘要中用占位符: "学生"、"某同学"
+  - 产出物中必须包含正确的姓名和学号
+  - 代码中不得出现其他学生的个人信息
+
+skills_needed:
+  - os-lab-report-automation: docx 模板修改 (姓名/学号/代码/结果)
+  - docx-raw-xml: docx XML 高级操作
+  - lab-report-execution: 终端窗口打开 + 截图引导
+```
+
 ---
 
 ## 6. 🔧 Harness Engineering — Agent Team 2.0 升级
@@ -298,6 +371,8 @@ Harness = 包裹在 LLM 之外的所有东西：
 
 详细流程见下方 "7.3 PR 提交工作流"
 ```
+
+> 📚 **参考文件:** `references/harness-engineering.md` — OpenAI、Anthropic 等来源的 Harness Engineering 研究摘要、关键模式、常见错误速查
 
 ---
 

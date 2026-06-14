@@ -70,20 +70,20 @@ Post-Task 复盘:
 
 ```bash
 # 手动同步
-bash ~/PTA/logs/hermes/sync.sh "📝 复盘: <任务名>"
+bash ~/Terence-Agent/sync.sh "📝 复盘: <任务名>"
 
 # 同步内容
 # - error-registry.md  (所有已知错误)
 # - architecture-constraints.md
 # - skill-registry.json
+# - agent-team/<agent>/README.md
 # - tasks/<task-id>/progress.md  (所有任务进度)
 ```
 
 | 配置项 | 值 |
 |:-------|:----|
-| 仓库 | `Leisure-Auf1/PTA` |
-| 路径 | `logs/hermes/` |
-| 脚本 | `~/PTA/logs/hermes/sync.sh` |
+| 仓库 | `Leisure-Auf1/Terence-Agent` |
+| 脚本 | `~/Terence-Agent/sync.sh` |
 | Token | `~/.git-credentials` (已保存) |
 
-同步时机：复盘第 6 步"收尾"之后，日志完整可推时执行。
+同步时机：复盘第 8 步"收尾"之后，日志完整可推时执行。
