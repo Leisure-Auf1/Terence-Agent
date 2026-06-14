@@ -85,6 +85,33 @@ related_skills: [guidance-agent, agent-debugger, agent-logger]
   - 合并后切换回 main: git checkout main && git pull
 ```
 
+
+
+## 🆕 JSON 通信 (Agent Message Protocol)
+
+### 发送时机
+完成每个关键步骤后（编译通过/文件写完/测试通过），写入 JSON 消息到消息队列：
+
+```
+# 写入 messages.jsonl (append)
+echo '{"msg_id":"msg_$(date +%s)","type":"task_complete","sender":"developer",
+  "target":"guidance","timestamp":"$(date -Iseconds)",
+  "payload":{"task_id":"<task-id>","phase":"coding","status":"success",
+    "summary":"<简述>","artifacts":["<文件路径>"],"errors":[],"next":"等待审核"},
+  "context":{"checkpoint":"<checkpoint路径>"}}' >> ~/.hermes/tasks/<task-id>/messages.jsonl
+```
+
+### 消息类型
+- `task_complete`: 编码任务完成, target=guidance
+- `error`: 遇到无法解决的编译/逻辑错误, target=debugger
+- `artifact_ready`: 产出物准备就绪, target=guidance
+
+### 读取时机
+启动时读取消息队列最后3条:
+```bash
+tail -3 ~/.hermes/tasks/<task-id>/messages.jsonl
+```
+
 ## 执行规范
 
 ```yaml

@@ -309,6 +309,8 @@ post-check:
 | **🆕 批量文件变更未走 PR** | 记入 error-registry `SKIP_PR_GATE` |
 | **🆕 跳过机械检查直接审核** | 记入 error-registry `SKIP_MECHANICAL_CHECK` |
 | **🆕 大步骤间未做 context checkpoint** | 记入 error-registry `CTX_CHECKPOINT_MISSING` |
+| **🆕 关键步骤后未写入 JSON 消息** | 记入 error-registry `JSON_MESSAGE_MISSING` |
+| **🆕 JSON 消息格式无效** | 记入 error-registry `JSON_INVALID` |
 | **🆕 Agent 之间互调工具** | 记入 error-registry `CROSS_AGENT_TOOL_CALL` |
 | **🆕 完成关键步骤后未通知 Logger** | 记入 error-registry `LOGGER_MISSING` |
 

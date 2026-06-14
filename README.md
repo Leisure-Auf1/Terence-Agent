@@ -25,6 +25,7 @@
 │       ├── venv/
 │       └── artifacts/
 │
+├── event-report/            ← 📋 事件报告（按日操作记录）
 ├── error-registry/          ← 报错表（共用的认知记忆）
 ├── architecture-constraints/← 架构约束
 ├── task-progress/           ← 进度追踪
