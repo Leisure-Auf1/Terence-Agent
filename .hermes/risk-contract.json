@@ -1,0 +1,83 @@
+{
+  "version": "1",
+  "schema": "Harness Engineering Control-Plane Pattern (Ryan Carson, 2026)",
+  "description": "机器可读风险合同 — 定义项目类型的风险等级和对应的检查要求",
+  "riskTierRules": {
+    "high": {
+      "description": "高风险 — 影响核心体系结构、凭据、数据",
+      "paths": [
+        "architecture-constraints/**",
+        "error-registry/**",
+        "agent-team/guidance-agent/**",
+        "config.yaml",
+        ".env",
+        "db/**",
+        "schema*"
+      ],
+      "requiredChecks": [
+        "preflight-script",
+        "risk-policy-gate",
+        "error-registry-audit",
+        "architecture-constraints-audit",
+        "event-report-mandatory",
+        "post-task-retrospective"
+      ]
+    },
+    "medium": {
+      "description": "中风险 — 新增文件、批量变更、Agent 定义修改",
+      "paths": [
+        "agent-team/**",
+        "paper-writing/**",
+        "projects/**",
+        "event-report/**"
+      ],
+      "requiredChecks": [
+        "preflight-script",
+        "error-registry-check",
+        "event-report-check"
+      ]
+    },
+    "low": {
+      "description": "低风险 — 常规开发、文档更新、模板修改",
+      "paths": [
+        "**"
+      ],
+      "requiredChecks": [
+        "preflight-script",
+        "event-report-check"
+      ]
+    }
+  },
+  "mergePolicy": {
+    "high": {
+      "requiredChecks": [
+        "preflight-script",
+        "error-registry-audit",
+        "architecture-constraints-audit",
+        "event-report-mandatory",
+        "post-task-retrospective"
+      ],
+      "requireReview": true
+    },
+    "medium": {
+      "requiredChecks": [
+        "preflight-script",
+        "error-registry-check",
+        "event-report-check"
+      ],
+      "requireReview": false
+    },
+    "low": {
+      "requiredChecks": [
+        "preflight-script",
+        "event-report-check"
+      ],
+      "requireReview": false
+    }
+  },
+  "entropyConfig": {
+    "maxInactiveDays": 30,
+    "maxMissingEventDays": 3,
+    "maxChangedFilesThreshold": 5
+  }
+}

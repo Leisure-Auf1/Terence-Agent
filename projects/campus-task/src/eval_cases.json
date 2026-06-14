@@ -1,0 +1,42 @@
+[
+  {
+    "input": "帮我添加一个完成软件工程实验的任务",
+    "expected_action": "add_task"
+  },
+  {
+    "input": "添加一个明天交的数据库实验报告",
+    "expected_action": "add_task"
+  },
+  {
+    "input": "帮我加一个复习数据结构期末考试的任务",
+    "expected_action": "add_task"
+  },
+  {
+    "input": "列出我的任务",
+    "expected_action": "list_tasks"
+  },
+  {
+    "input": "查看我还有什么任务没完成",
+    "expected_action": "list_tasks"
+  },
+  {
+    "input": "显示所有任务",
+    "expected_action": "list_tasks"
+  },
+  {
+    "input": "把第1个任务标记为完成",
+    "expected_action": "done_task"
+  },
+  {
+    "input": "完成第3个任务",
+    "expected_action": "done_task"
+  },
+  {
+    "input": "删除所有任务",
+    "expected_action": "delete_all_tasks"
+  },
+  {
+    "input": "你能做什么？",
+    "expected_action": "help"
+  }
+]

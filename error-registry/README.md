@@ -54,11 +54,16 @@ related_skills: [architecture-constraints, task-progress]
 | `MCP_REGISTER` | MCP 服务器需加 `~/.hermes/config.yaml` + 重启才生效 |
 | `CTX_OVERLOAD` | 拉了不必要上下文（如开发时拉浏览器自动化）被用户纠正后记入此条 |
 | `SKIP_LAYER_VIOLATION` | 跳层调用 — 如 L1→L3 跳过 L2 |
-| `REPEAT_ERROR` | 重复已报过的错误，应查 error-registry 未查 |
-| `SKIP_KNOWN_FIX` | 跳过 error-registry 已知修复直接走弯路 |
-| `PROGRESS_MISSING` | 完成任务后未更新 task-progress |
-| `SKIP_RETROSPECTIVE` | 完成任务后未执行强制复盘 — 必须执行 6 步复盘清单 |
-| `FIX_NO_REPORT` | Debugger 修复错误后未提交到 error-registry — 每次修复必须写入错误码+根因+修复方案 |
+|| `REPEAT_ERROR` | 重复已报过的错误，应查 error-registry 未查 |
+|| `SKIP_KNOWN_FIX` | 跳过 error-registry 已知修复直接走弯路 |
+|| `PROGRESS_MISSING` | 完成任务后未更新 task-progress |
+|| `EVENT_REPORT_MISSING` | 完成任务后未写入 event-report — 每次完成必须记录操作日志 |
+|| `STATE_CHECK_MISSING` | 实现项目前未实时查看仓库状态 — 必须 `git status` + 查看最新文件后再动手 |
+|| `PREFLIGHT_SKIPPED` | 实现项目前跳过 preflight 检查脚本 — 必须先运行 `bash scripts/check-preflight.sh` |
+|| `FEEDBACK_MISSING` | 有 Feedforward (preflight) 但无 Feedback (事后复盘) — Feedforward+Feedback 必须配对 |
+|| `HARNESS_MISMATCH` | 实际变更路径与 risk-contract.json 声明的风险等级不匹配 |
+|| `SKIP_RETROSPECTIVE` | 完成任务后未执行强制复盘 — 必须执行 6 步复盘清单 |
+|| `FIX_NO_REPORT` | Debugger 修复错误后未提交到 error-registry — 每次修复必须写入错误码+根因+修复方案 |
 | `RIGID_RULE` | Guidance Agent 预设了固定规则（如硬性分类加载）而非根据项目随机应变 — 应遵循 Phase 0 |
 
 ## 🔧 SUDO_NEEDED 修复
