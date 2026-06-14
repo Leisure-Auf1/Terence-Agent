@@ -78,8 +78,12 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
 ```
 执行顺序:
   1. Guidance Agent 做完 Phase 1-4
+  1.5 上下文审批（隐私检查）: 审查 Phase 1-3 摘要是否含用户真实姓名/学号/联系方式
+       - 除非用户明确要求，否则用"用户/某同学"等占位符替代
+       - 委托子 Agent (delegate_task context 字段) 时尤其注意不要泄露隐私
+       - 代码/页面中不得硬编码任何个人信息
   2. 调用 skill_view 加载对应 Agent 技能
-  3. 移交控制权 (用 terminal/write_file 把上下文传给下一个 Agent)
+  3. 移交控制权 (用 terminal/write_file/delegate_task 把上下文传给下一个 Agent)
   4. 当前 Agent 转为 Logger 角色记录过程
 ```
 
@@ -139,6 +143,7 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
      skill_view(name='agent-logger')      # 始终加载
   5. Guidance Agent 移交:
      a. 写下上下文摘要 (Phase 1-3 结果)
+     a.5 上下文隐私审查: 摘要中不得含真实姓名/学号/联系方式等个人信息
      b. Logger 初始化 task-progress
      c. 执行 Agent 开始工作
      d. 遇到错误 → Debugger 介入
@@ -181,6 +186,132 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
   Logger   → task-progress
   不需要   → Developer, Debugger
 ```
+---
+
+## 6. 🔧 Harness Engineering — Agent Team 2.0 升级
+
+> **核心思想 (来自 OpenAI/Anthropic 2026):** 模型是大脑，**harness（约束系统）是身体**。真正的 Agent 工程不是写更好的提示词，而是设计更好的 **约束、反馈回路、上下文管理、验证系统和工作流**。
+>
+> **关键洞察:** 同一个模型，不同的 harness，产出差距可达 **6x**。
+
+### 6.1 什么是 Harness Engineering？
+
+Harness = 包裹在 LLM 之外的所有东西：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      AGENT HARNESS                          │
+│                                                             │
+│  ┌────────────┐  ┌───────────┐  ┌───────────┐  ┌─────────┐ │
+│  │ 上下文引擎  │  │ 安全护栏   │  │ 评测/观测  │  │ 编排/    │ │
+│  │ (Context   │  │ (Guardrails│  │ (Evals &   │  │ 运行时  │ │
+│  │  Engine)   │  │ & Safety)  │  │ Observability│  │Runtime) │
+│  └─────┬──────┘  └─────┬─────┘  └─────┬─────┘  └────┬────┘ │
+│        └────────────────┼──────────────┼──────────────┘      │
+│                   ┌─────┴──────┐       │                     │
+│                   │  LLM Agent  │       │                     │
+│                   │ (Model +    │       │                     │
+│                   │   Tools)    │       │                     │
+│                   └────────────┘       │                     │
+│  ┌────────────┐  ┌───────────┐  ┌──────┴──────────┐          │
+│  │ 记忆/状态   │  │ 规范/文档  │  │ 沙箱/隔离执行   │          │
+│  │ (Memory)   │  │ (Specs)   │  │ (Sandbox)       │          │
+│  └────────────┘  └───────────┘  └─────────────────┘          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 五个黄金模式 (来自行业共识)
+
+| 模式 | 原理 | 在我们的 Agent Team 中 |
+|:-----|:-----|:----------------------|
+| **1. 分解任务** | 大任务降低 Agent 质量，拆成设计→实现→审核→验证 | 已有: Planner → Workers → Integrator → Reviewer → Debugger |
+| **2. 生成vs评估分离** | 创造者不审自己的产出，用独立评估器 | ✅ 已有: Reviewer Agent 独立审核，Debugger 独立修复 |
+| **3. 上下文重置** | 长会话积累噪音，用干净的 artifact 接力而非拖一个大 context | **🆕 需要强化:** 每个大步骤后做上下文摘要，传递 compact state |
+| **4. 工具优先** | 让工具/脚本/测试做实际工作，减少模型负担 | ✅ 已有: Error Cascade + 层级工具 |
+| **5. 编排即产品设计** | Harness 不是基础设施胶水，而是产品 — 步骤顺序、工具形状、输出清晰度都影响 Agent 行为 | **🆕 需要强化:** 每一步的输入输出格式需显式定义 |
+
+### 6.3 🔥 在 Agent Team 中落地的 Harness 强化
+
+#### 强化 A: 上下文管理 (Context Management)
+
+```
+原则: 干净的上下文 = 可靠的 Agent。肮脏的上下文 = 幻觉 + 死循环。
+
+🆕 每3+个工具调用后自动做 context checkpoint:
+  ├─ 总结已完成部分 (≤5句)
+  ├─ 记录未完成部分 (≤3个待办)
+  ├─ 记录关键决策 (文件名、变量名、接口约定)
+  └─ 写入 task-progress 供下个 Agent 读取
+
+🆕 大步骤间做上下文重置:
+  ├─ Phase Complete → 写 artifact → 开新 context
+  ├─ 如: Design 完 → 写 spec.md → 关 context → 开新 context 给 Implementation
+  └─ 好处: 每个 Agent 只看到自己需要的上下文
+```
+
+#### 强化 B: 机械约束优先 (Mechanical Enforcement)
+
+```
+原则: 用 linter/CI/结构性测试 替代提示词约束
+
+🆕 对于代码项目:
+  ├─ 写 spec 时同时写验证规则 (可被机械执行)
+  │   ├─ HTML id / class 命名检查脚本
+  │   ├─ API 签名一致性检查
+  │   ├─ 文件边界规则检查 (CSS 无 JS、HTML 无内联样式)
+  │   └─ 命名规范检查 (kebab-case / const-let)
+  ├─ Reviewer 优先运行这些检查脚本，再人工审核逻辑
+  └─ Debugger 根据机械检查结果精准修复
+
+约束: 任何可以在代码中检查的规则 → 写成脚本 → 在 CI/Review 中运行
+       任何不能写成脚本的规则 → 才放入提示词约束
+```
+
+#### 强化 C: 仓库即系统记录 (Repository as System of Record)
+
+```
+原则: 所有文档、规范、架构决策都进 Git 仓库，不进聊天记录
+
+🆕 标准化项目文档结构:
+  projects/<项目名>/
+  ├── README.md              ← 项目总览
+  ├── USAGE.md               ← 用户手册
+  ├── DESIGN.md              ← 设计决策记录 (为什么这么设计)
+  ├── SPEC.md                ← 功能规范 (做什么)
+  ├── docs/
+  │   ├── exec-plans/        ← 执行计划
+  │   ├── decisions/         ← 架构决策记录 (ADR)
+  │   └── references/        ← 参考资料 (API文档等)
+  ├── src/                   ← 源代码
+  ├── tests/                 ← 测试
+  └── artifacts/             ← 构建产出物
+
+🆕 AGENTS.md (可选) — Agent 行为指南:
+  类似 OpenAI 的 AGENTS.md → 约 100 行
+  告诉 Agent: 代码风格、测试要求、PR 流程、目录结构
+```
+
+#### 强化 D: PR 提交作为标准交付门控
+
+```
+对于任何产生代码/配置/文档的实现项目，交付流程必须包含 PR。
+
+详细流程见下方 "7.3 PR 提交工作流"
+```
+
+---
+
+## 7. Web UI 集成参考
+
+Agent Team 的 Web UI 可视化、群聊、任务看板需映射到 Hermes Web UI 现有四层架构。
+详见 `references/web-ui-architecture.md` 了解：
+
+- 文件增删位置（`web_server.py`、`web/src/pages/`、`web/src/lib/`）
+- 通信协议选择（`/api/ws` JSON-RPC vs `/api/pty` xterm）
+- 四条现有 WebSocket 端点的用途
+- 100+ REST 端点的组织模式
+- Agent 进程启动方式（subprocess + PTY + JSON-RPC）
+- Guidance Agent 管理工具的注册位置
 
 ---
 
@@ -192,4 +323,219 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
 约束 3: 用户纠正分配错误时 → 更新技能分配规则 (Phase 4)
 约束 4: 每次分配记录到 task-progress (Logger 职责)
 约束 5: 如果发现不需要某个已加载的 Agent → 卸载对应技能 (CTX_OVERLOAD)
+约束 6: 上下文中不得含用户真实姓名/学号/联系方式，除非用户明确要求包含
+       - 违反此约束 → Debugger 立即介入 → 修正后重新移交
+
+---
+
+## 7. 真正的多智能体协作 (Multi-Agent Pipeline)
+
+> ⚠️ **常见误区**: 只派一个子 Agent 干活 ≠ 多智能体团队。
+> 真正的多智能体协作 = **多个 Agent 并行工作，各司其职，通过管道串联**。
+
+### 7.1 单 Agent vs 多 Agent
+
+| | 单子 Agent | 真正的多 Agent 团队 |
+|:--|:-----------|:-------------------|
+| 角色 | 1 个 Agent 包揽全部 | 多个 Agent 各司其职 |
+| 并行度 | 串行，一个个做 | 批量并行（`delegate_task` batch mode） |
+| 质量保障 | 依赖单次输出 | 独立 Reviewer + Debugger 闭环 |
+| 适用场景 | 简单、独立、<5 步的任务 | 需要多人协作、多文件、需质量审核 |
+
+### 7.2 多智能体开发管道
+
+适用于**编码/开发**类任务的标准管道：
+
+```
+Phase 0: 倾听需求 + 隐私审查
+              │
+    ┌─────────▼─────────┐
+    │  🤖 Planner Agent  │ ← 写设计规范 (spec.md)
+    │  定义数据模型/接口  │    每个 Agent 按同一份规范工作
+    └─────────┬─────────┘
+              │
+    ┌─────────▼──────────────────────┐
+    │  🤖 并行 Worker Agents (3个+)  │ ← delegate_task batch mode
+    │                                 │    同时启动，互不依赖
+    │  ├─ Structure Agent → file A    │    每个写不同文件，避免冲突
+    │  ├─ Designer Agent  → file B    │
+    │  └─ Logic Agent     → file C    │
+    └─────────┬──────────────────────┘
+              │
+    ┌─────────▼─────────┐
+    │  🤖 Integrator    │ ← 检查接口一致性
+    │  Agent            │    HTML↔JS id 匹配?
+    │                   │    JS↔CSS class 匹配?
+    └─────────┬─────────┘    事件绑定一致?
+              │
+    ┌─────────▼─────────┐
+    │  🤖 Reviewer      │ ← 完整质量审核
+    │  Agent            │    Spec 合规? 代码质量? 安全?
+    └─────────┬─────────┘
+              │
+    ┌─────────▼─────────┐
+    │  🔧 Debugger      │ ← 修复所有发现的问题
+    │  Agent(s)         │    可能多轮 (fix → re-review → re-fix)
+    └─────────┬─────────┘
+              │
+    ┌─────────▼─────────┐
+    │  🧪 Guidance 验收 │ ← 浏览器/终端实测
+    │  + Logger 复盘     │    确认功能正常后才交付
+    └─────────┬─────────┘
+              │
+    ┌─────────▼─────────┐
+    │  🚀 PR 提交       │ ← ⭐ 新增！标准交付最后一步
+    │  ├─ 创建分支       │    对于所有 Terence-Agent 项目
+    │  ├─ 提交代码       │
+    │  ├─ 创建 PR        │
+    │  ├─ 等待 CI        │
+    │  └─ 合并 PR        │
+    └───────────────────┘
+```
+
+### 7.3 PR 提交工作流 (标准交付门控)
+
+> **原则 (来自 OpenAI Harness Engineering, 2026):** 修正很便宜，等待很昂贵。短生命周期 PR，最小阻塞门控。
+
+对于所有 **Terence-Agent 仓库的实现项目**，以下 PR 流程是交付的最后一步：
+
+```
+┌──────────────────────────────────────────────────────┐
+│  🚀 PR 提交流程                                       │
+│                                                      │
+│  1. 从 main 创建分支                                   │
+│     git checkout -b feat/<项目名>-<简述>               │
+│                                                      │
+│  2. 提交代码 (用 conventional commits)                 │
+│     git add <文件>                                     │
+│     git commit -m "feat: 添加XXX功能                   │
+│                      │                                │
+│                      ├─ 实现A                         │
+│                      ├─ 实现B                         │
+│                      └─ 添加测试"                      │
+│                                                      │
+│  3. 推送 + 创建 PR                                    │
+│     git push -u origin HEAD                           │
+│     gh pr create --title "feat: ..." --body "..."     │
+│                                                      │
+│  4. PR 自审 (Agent 自我审核)                           │
+│     gh pr diff → 检查是否有:                           │
+│     ├─ 硬编码的个人信息？                               │
+│     ├─ 遗漏的文件？                                    │
+│     ├─ 注释/文档不完整？                                │
+│     └─ 与 spec 不一致？                                │
+│                                                      │
+│  5. 合并 (squash, 保留干净历史)                        │
+│     gh pr merge --squash --delete-branch               │
+│                                                      │
+│  6. 通知用户: "PR #N 已合并"                           │
+└──────────────────────────────────────────────────────┘
+```
+
+#### PR 提交规范和模板
+
+```yaml
+pr_title_format: "type(scope): short description"
+
+types:
+  feat:    新功能
+  fix:     修复
+  refactor: 重构
+  docs:    文档
+  test:    测试
+  chore:   杂项 (构建/CI/配置)
+
+scope: <项目名或模块名>
+
+pr_body_template: |
+  ## Summary
+  <2-3句简述本次变更>
+  
+  ## Changes
+  - 变更1
+  - 变更2
+  
+  ## Test Plan
+  - [ ] 功能测试通过
+  - [ ] 自审通过 (无硬编码隐私信息)
+  
+  Closes #<issue_number> (如果有)
+
+branch_naming: "type/<项目名>-<简述>"
+  # 如: feat/ucampus-driver-universal-v2
+  #     fix/guidance-agent-section-order
+  #     docs/harness-engineering-integration
+```
+
+#### 适合提交 PR 的场景
+
+```
+✅ 新增项目/功能到 Terence-Agent → 必须提 PR
+✅ 修改已有技能/配置 → 建议提 PR
+✅ 批量文件变更 (>3个文件) → 必须提 PR
+✅ 任何需要回滚能力的变更 → 必须提 PR
+❌ 单行配置修改 → 可直接 push (但建议走 PR)
+❌ 临时调试文件 → 不提交
+```
+
+---
+
+### 7.4 关键技术决策
+
+```yaml
+并行策略:
+  - 使用 delegate_task 的 batch mode (tasks 数组参数)
+  - 每个 Worker Agent 写不同的文件（避免文件锁冲突）
+  - 项目规模小 → 3 个并行 Worker（结构/样式/逻辑）就够了
+  - 项目规模大 → 可以更多（路由/数据库/API/测试各自一个 Agent）
+
+规范先行:
+  - 先派 Planner Agent 写 spec，定义所有接口约定
+  - 所有 Worker 按同一份 spec 开发
+  - spec 中明确：id 命名、class 命名、数据模型、函数签名
+
+集成检查:
+  - 并行 Worker 结束后，必须先派 Integrator 检查一致
+  - 常见问题：ID 不匹配、class 名不匹配、事件绑定错位
+
+质量闭环:
+  - Reviewer 发现的问题必须由 Debugger 修复
+  - 重要问题需要 re-review 确认
+  - 最终由 Guidance（你）做浏览器/终端实测验收
+```
+
+### 7.4 不要做什么
+
+```yaml
+❌ 派一个 Agent 包揽全部 → 不是多智能体
+❌ 多个 Agent 写同一个文件 → 冲突
+❌ 跳过 Planner 直接并行 → 各写各的，合不起来
+❌ 跳过 Integrator → 接口不一致无人发现
+❌ 跳过 Reviewer → 质量问题无人把关
+❌ 跳过实测验收 → 可能根本打不开
+
+✅ 正确做法:
+   1. Planner → spec
+   2. Parallel Workers → 各写各的文件
+   3. Integrator → 检查接口
+   4. Reviewer → 质量审核
+   5. Debugger → 修复问题
+   6. Guidance 实测 → 交付
+   7. Logger → 复盘
+   8. 🚀 PR 提交 → 分支→提交→PR→合并
+```
+
+### 7.5 隐私检查 — 每次委托前必须做
+
+```yaml
+每次调用 delegate_task 之前，检查 context 字段中:
+  [ ] 是否有用户真实姓名?
+  [ ] 是否有学号/工号?
+  [ ] 是否有电话号码/微信号?
+  [ ] 是否有邮箱地址?
+  [ ] 是否有其他可识别个人身份的信息?
+  
+如果有 → 用占位符替代（"用户"、"某同学"、"xxx"）
+       → 并在 context 末尾加一句 "⚠️ 隐私要求：代码中不得出现任何真实姓名"
+       → 移交给子 Agent 的上下文已被清理，可以安全委托
 ```

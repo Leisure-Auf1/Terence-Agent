@@ -17,8 +17,10 @@ related_skills: [guidance-agent, agent-developer, agent-debugger, agent-executor
 2. Developer 每完成一步 → 更新 progress
 3. Executor 每执行一步 → 更新 progress + 记录产出物
 4. Debugger 修复错误 → 更新 error-registry + progress
-5. 全部完成后 → 执行 Post-Task 复盘 (6步)
-6. 复盘结果 → 更新 progress "复盘完成"
+5. 🆕 Developer 提交 PR → 记录 PR 号 + 状态
+6. 🆕 CI 结果 → 记录 CI 状态 (pending/success/failure)
+7. 全部完成后 → 执行 Post-Task 复盘 (8步)
+8. 复盘结果 → 更新 progress "复盘完成"
 ```
 
 ## 可用技能
@@ -43,19 +45,23 @@ related_skills: [guidance-agent, agent-developer, agent-debugger, agent-executor
 ```yaml
 每步记录:
   agent:     "developer | executor | debugger"
-  action:    "编码 | 执行 | 修复"
+  action:    "编码 | 执行 | 修复 | PR提交 | CI检查"
   status:    "进行中 | 成功 | 失败"
   detail:    "具体描述"
   artifact:  "产出物路径"
   error:     "错误码 (如果有)"
+  pr:        "PR #N (如果有)"            # 🆕
+  ci_status: "pending | success | failure"  # 🆕
 
 Post-Task 复盘:
   1. 读日志: "有错吗?" → 记录
   2. 读产出: "符合预期?" → 记录差距
   3. 查重复: "这错犯过吗?" → 查 error-registry
-  4. 学教训: "下次怎么避免?" → 更新修复方案
-  5. 固化: "需要 skill?" → 创建/更新
-  6. 收尾: 标记完成
+  4. 机械检查: "有可写成脚本的检查项吗?" → 创建/更新 [Harness]
+  5. PR 检查: "产出需要走 PR?" → 记录 PR 号 [PR]
+  6. 学教训: "下次怎么避免?" → 更新修复方案
+  7. 固化: "需要 skill?" → 创建/更新
+  8. 收尾: 标记完成
 ```
 
 ## Git 同步 (可选)

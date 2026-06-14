@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>代跑代课 · 校园互助</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #6366f1;
+    --primary-bg: #eef2ff;
+    --success: #10b981;
+    --success-bg: #ecfdf5;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --gray: #6b7280;
+    --gray-light: #e5e7eb;
+    --gray-bg: #f9fafb;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f3f4f6;
+    color: #1f2937;
+    line-height: 1.6;
+    padding-bottom: 80px;
+  }
+  .container { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #fff;
+    padding: 24px 16px 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(79,70,229,.3);
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+  .header p { font-size: 13px; opacity: .85; margin-top: 4px; }
+
+  /* Nickname Bar */
+  .nickname-bar {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border-bottom: 1px solid var(--gray-light);
+  }
+  .nickname-bar label { font-size: 14px; color: var(--gray); white-space: nowrap; margin-right: 8px; }
+  .nickname-input-wrap { display: flex; align-items: center; flex: 1; gap: 6px; }
+  .nickname-input-wrap input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--gray-light);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .nickname-input-wrap input:focus { border-color: var(--primary); }
+  .nickname-input-wrap button {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .2s;
+  }
+  .nickname-input-wrap button:hover { background: var(--primary-light); }
+  .nickname-display { font-weight: 600; color: var(--primary); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid var(--gray-light);
+    position: sticky;
+    top: 106px;
+    z-index: 49;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px 0;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+  }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tab-btn:not(.active):hover { color: #374151; }
+
+  /* Panel */
+  .panel { display: none; padding-top: 16px; }
+  .panel.active { display: block; }
+
+  /* Card */
+  .card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  /* Form */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--gray-light);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+  }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn-primary:hover { background: var(--primary-light); }
+
+  /* Filter */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 6px 16px;
+    border: 1px solid var(--gray-light);
+    border-radius: 20px;
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .2s;
+    color: var(--gray);
+  }
+  .filter-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .filter-btn:not(.active):hover { border-color: var(--primary); color: var(--primary); }
+
+  /* Request Item */
+  .request-item {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: box-shadow .2s;
+  }
+  .request-item:hover { box-shadow: var(--shadow-md); }
+  .req-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .req-type {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .req-type.run { background: var(--success-bg); color: var(--success); }
+  .req-type.class { background: var(--warning-bg); color: var(--warning); }
+  .req-status {
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+  .req-status.open { background: #eef2ff; color: var(--primary); }
+  .req-status.taken { background: #f3f4f6; color: var(--gray); }
+  .req-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .req-meta { font-size: 13px; color: var(--gray); line-height: 1.8; }
+  .req-meta span { margin-right: 12px; }
+  .req-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--gray-light);
+  }
+  .req-price { font-size: 18px; font-weight: 700; color: var(--primary); }
+  .req-price::before { content: '¥'; font-size: 14px; }
+  .btn-take {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-take.open { background: var(--primary); color: #fff; }
+  .btn-take.open:hover { background: var(--primary-light); }
+  .btn-take.taken { background: #f3f4f6; color: var(--gray); cursor: default; }
+  .btn-take.my-own { background: var(--gray-bg); color: var(--gray); cursor: default; border: 1px dashed var(--gray-light); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gray);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    pointer-events: none;
+  }
+  .toast {
+    background: #1f2937;
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: var(--shadow-md);
+    animation: toastIn .3s ease, toastOut .3s ease 2s forwards;
+    pointer-events: auto;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: #ef4444; }
+
+  @keyframes toastIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-12px); } }
+
+  /* My requests tab */
+  .my-empty { text-align: center; padding: 40px 0; color: var(--gray); }
+  .my-empty p { font-size: 14px; }
+
+  /* Responsive */
+  @media (max-width: 420px) {
+    .form-row { grid-template-columns: 1fr; }
+    .header h1 { font-size: 18px; }
+    .nickname-bar { flex-wrap: wrap; gap: 6px; }
+    .req-footer { flex-direction: column; gap: 8px; align-items: stretch; }
+    .btn-take { width: 100%; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏃 代跑代课</h1>
+  <p>校园互助 · 发布需求 &amp; 接单平台</p>
+</div>
+
+<!-- Nickname -->
+<div class="nickname-bar">
+  <label>👤 我的昵称</label>
+  <div class="nickname-input-wrap" id="nicknameWrap">
+    <input type="text" id="nicknameInput" placeholder="输入昵称..." maxlength="12">
+    <button id="nicknameBtn">设置</button>
+  </div>
+  <span class="nickname-display" id="nicknameDisplay" style="display:none"></span>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="publish">📋 发布</button>
+  <button class="tab-btn" data-tab="list">📌 需求列表</button>
+  <button class="tab-btn" data-tab="mine">📂 我的发布</button>
+</div>
+
+<div class="container">
+
+  <!-- Publish Panel -->
+  <div class="panel active" id="panel-publish">
+    <div class="card">
+      <form id="publishForm" autocomplete="off">
+        <div class="form-group">
+          <label>需求类型</label>
+          <select id="reqType">
+            <option value="run">🏃 代跑（体育跑步）</option>
+            <option value="class">📚 代课（上课签到）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>课程 / 项目名称</label>
+          <input type="text" id="reqName" placeholder="例如：大学体育3000米 / 高等数学" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>日期</label>
+            <input type="date" id="reqDate" required>
+          </div>
+          <div class="form-group">
+            <label>时间</label>
+            <input type="time" id="reqTime" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>地点</label>
+          <input type="text" id="reqLocation" placeholder="例如：东区体育场 / 教学楼A201" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>价格（元）</label>
+            <input type="number" id="reqPrice" placeholder="0" min="0" step="0.5" required>
+          </div>
+          <div class="form-group">
+            <label>联系方式</label>
+            <input type="text" id="reqContact" placeholder="微信 / QQ / 电话" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>备注（选填）</label>
+          <textarea id="reqNote" placeholder="额外说明…" rows="2"></textarea>
+        </div>
+        <button type="submit" class="btn-primary">📢 发布需求</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- List Panel -->
+  <div class="panel" id="panel-list">
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="run">🏃 代跑</button>
+      <button class="filter-btn" data-filter="class">📚 代课</button>
+    </div>
+    <div id="requestList"></div>
+  </div>
+
+  <!-- My Publish Panel -->
+  <div class="panel" id="panel-mine">
+    <div id="myList"></div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'daipao_requests';
+  const NICKNAME_KEY = 'daipao_nickname';
+
+  /* ---- Helpers ---- */
+  function getRequests() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+  }
+  function saveRequests(reqs) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reqs));
+  }
+  function getNickname() {
+    return localStorage.getItem(NICKNAME_KEY) || '';
+  }
+  function saveNickname(name) {
+    localStorage.setItem(NICKNAME_KEY, name);
+  }
+
+  function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function toast(msg, type) {
+    const container = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast' + (type ? ' ' + type : '');
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 2500);
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const m = d.getMonth() + 1, dd = d.getDate();
+    return m + '月' + dd + '日';
+  }
+
+  /* ---- Render ---- */
+  function renderList(filter, targetEl) {
+    const all = getRequests();
+    let list;
+    if (filter === 'all') list = all;
+    else list = all.filter(r => r.type === filter);
+
+    if (!list.length) {
+      targetEl.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>暂无需求，去发布一个吧！</p></div>';
+      return;
+    }
+
+    const nickname = getNickname();
+    let html = '';
+    list.forEach(r => {
+      const typeLabel = r.type === 'run' ? '🏃 代跑' : '📚 代课';
+      const typeCls = r.type === 'run' ? 'run' : 'class';
+      const statusCls = r.status === 'open' ? 'open' : 'taken';
+      const statusLabel = r.status === 'open' ? '可接单' : '已被接';
+      const isCreator = nickname && r.creator === nickname;
+      const canTake = r.status === 'open' && !isCreator;
+
+      let btnHtml;
+      if (isCreator) {
+        btnHtml = '<button class="btn-take my-own">我的发布</button>';
+      } else if (r.status === 'open') {
+        btnHtml = `<button class="btn-take open" data-id="${r.id}">✅ 接单</button>`;
+      } else {
+        btnHtml = '<button class="btn-take taken">已被接</button>';
+      }
+
+      html += `
+        <div class="request-item">
+          <div class="req-header">
+            <span class="req-type ${typeCls}">${typeLabel}</span>
+            <span class="req-status ${statusCls}">${statusLabel}</span>
+          </div>
+          <div class="req-title">${escapeHtml(r.name)}</div>
+          <div class="req-meta">
+            <span>📅 ${formatDate(r.date)} ${r.time}</span>
+            <span>📍 ${escapeHtml(r.location)}</span>
+          </div>
+          <div class="req-meta">
+            <span>📞 ${escapeHtml(r.contact)}</span>
+            ${r.note ? '<span>💬 ' + escapeHtml(r.note) + '</span>' : ''}
+            <span>👤 ${escapeHtml(r.creator)}</span>
+          </div>
+          <div class="req-footer">
+            <span class="req-price">${parseFloat(r.price).toFixed(1)}</span>
+            ${btnHtml}
+          </div>
+        </div>
+      `;
+    });
+    targetEl.innerHTML = html;
+
+    // Bind take buttons
+    targetEl.querySelectorAll('.btn-take.open').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        const id = this.dataset.id;
+        takeRequest(id);
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function takeRequest(id) {
+    const nickname = getNickname();
+    if (!nickname) {
+      toast('请先设置昵称再接单', 'error');
+      return;
+    }
+    const reqs = getRequests();
+    const idx = reqs.findIndex(r => r.id === id);
+    if (idx === -1) { toast('需求不存在', 'error'); return; }
+    if (reqs[idx].status !== 'open') { toast('该需求已被接走', 'error'); return; }
+    if (reqs[idx].creator === nickname) { toast('不能接自己的单', 'error'); return; }
+
+    reqs[idx].status = 'taken';
+    reqs[idx].taker = nickname;
+    saveRequests(reqs);
+    toast('✅ 接单成功！请联系发布者', 'success');
+    refreshAll();
+  }
+
+  /* ---- Refresh ---- */
+  let currentFilter = 'all';
+
+  function refreshAll() {
+    renderList(currentFilter, document.getElementById('requestList'));
+    renderMyList();
+  }
+
+  function renderMyList() {
+    const nickname = getNickname();
+    const el = document.getElementById('myList');
+    if (!nickname) {
+      el.innerHTML = '<div class="my-empty"><p>请先设置昵称，即可查看自己发布的需求</p></div>';
+      return;
+    }
+    const all = getRequests();
+    const mine = all.filter(r => r.creator === nickname);
+    if (!mine.length) {
+      el.innerHTML = '<div class="my-empty"><p>你还没有发布过需求</p></div>';
+      return;
+    }
+    renderList('all', el);
+    // The renderList works globally — but we only show creator's items, so re-filter
+    // Actually renderList with 'all' shows everything. We need a targeted render.
+    // Let's manually build for mine.
+    const targetEl = el;
+    let html = '';
+    mine.forEach(r => {
+      const typeLabel = r.type === 'run' ? '🏃 代跑' : '📚 代课';
+      const typeCls = r.type === 'run' ? 'run' : 'class';
+      const statusCls = r.status === 'open' ? 'open' : 'taken';
+      const statusLabel = r.status === 'open' ? '可接单' : '已被接';
+      const takenBy = r.taker ? '（接单者：' + escapeHtml(r.taker) + '）' : '';
+
+      html += `
+        <div class="request-item">
+          <div class="req-header">
+            <span class="req-type ${typeCls}">${typeLabel}</span>
+            <span class="req-status ${statusCls}">${statusLabel} ${takenBy}</span>
+          </div>
+          <div class="req-title">${escapeHtml(r.name)}</div>
+          <div class="req-meta">
+            <span>📅 ${formatDate(r.date)} ${r.time}</span>
+            <span>📍 ${escapeHtml(r.location)}</span>
+          </div>
+          <div class="req-meta">
+            <span>📞 ${escapeHtml(r.contact)}</span>
+            ${r.note ? '<span>💬 ' + escapeHtml(r.note) + '</span>' : ''}
+          </div>
+          <div class="req-footer">
+            <span class="req-price">${parseFloat(r.price).toFixed(1)}</span>
+            <button class="btn-take ${r.status === 'open' ? 'open' : 'taken'}" ${r.status === 'open' ? '' : 'disabled'}>
+              ${r.status === 'open' ? '⏳ 等待接单' : '✅ 已被接'}
+            </button>
+          </div>
+        </div>
+      `;
+    });
+    targetEl.innerHTML = html;
+  }
+
+  /* ---- Init ---- */
+  function init() {
+    const nickname = getNickname();
+    if (nickname) {
+      document.getElementById('nicknameInput').value = nickname;
+      document.getElementById('nicknameInput').style.display = 'none';
+      document.getElementById('nicknameBtn').textContent = '更换';
+      const display = document.getElementById('nicknameDisplay');
+      display.textContent = nickname;
+      display.style.display = 'inline';
+    }
+
+    // Set default date to today
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('reqDate').value = today;
+
+    // Nickname set
+    document.getElementById('nicknameBtn').addEventListener('click', function() {
+      const input = document.getElementById('nicknameInput');
+      const display = document.getElementById('nicknameDisplay');
+      const name = input.value.trim();
+      if (!name) { toast('请输入昵称', 'error'); return; }
+      saveNickname(name);
+      input.style.display = 'none';
+      this.textContent = '更换';
+      display.textContent = name;
+      display.style.display = 'inline';
+      toast('昵称已设置：' + name, 'success');
+      refreshAll();
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('panel-' + this.dataset.tab).classList.add('active');
+        if (this.dataset.tab === 'mine') renderMyList();
+        if (this.dataset.tab === 'list') refreshAll();
+      });
+    });
+
+    // Filter
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentFilter = this.dataset.filter;
+        renderList(currentFilter, document.getElementById('requestList'));
+      });
+    });
+
+    // Publish form
+    document.getElementById('publishForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const nickname = getNickname();
+      if (!nickname) { toast('请先设置昵称再发布', 'error'); return; }
+
+      const req = {
+        id: genId(),
+        type: document.getElementById('reqType').value,
+        name: document.getElementById('reqName').value.trim(),
+        date: document.getElementById('reqDate').value,
+        time: document.getElementById('reqTime').value,
+        location: document.getElementById('reqLocation').value.trim(),
+        price: document.getElementById('reqPrice').value,
+        contact: document.getElementById('reqContact').value.trim(),
+        note: document.getElementById('reqNote').value.trim(),
+        creator: nickname,
+        status: 'open',
+        taker: '',
+        createdAt: Date.now()
+      };
+
+      if (!req.name || !req.location || !req.contact) {
+        toast('请填写完整信息', 'error');
+        return;
+      }
+
+      const reqs = getRequests();
+      reqs.unshift(req);
+      saveRequests(reqs);
+      this.reset();
+      document.getElementById('reqDate').value = new Date().toISOString().slice(0, 10);
+      toast('🎉 发布成功！', 'success');
+      refreshAll();
+
+      // Switch to list tab
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelector('[data-tab="list"]').classList.add('active');
+      document.getElementById('panel-list').classList.add('active');
+      renderList(currentFilter, document.getElementById('requestList'));
+    });
+
+    // Initial render
+    renderList(currentFilter, document.getElementById('requestList'));
+    renderMyList();
+
+    // If no requests, seed demo data
+    const existing = getRequests();
+    if (existing.length === 0) {
+      const demos = [
+        { id: genId(), type: 'run', name: '大学体育3000米测试', date: '2026-06-10', time: '16:00', location: '东区体育场', price: '15', contact: '微信: demo01', note: '需要带学生证', creator: '小明', status: 'open', taker: '', createdAt: Date.now() - 7200000 },
+        { id: genId(), type: 'class', name: '高等数学（上）', date: '2026-06-08', time: '08:00', location: '教学楼A201', price: '25', contact: 'QQ: 123456', note: '需要签到+交作业', creator: '小红', status: 'open', taker: '', createdAt: Date.now() - 14400000 },
+        { id: genId(), type: 'run', name: '校园跑5公里', date: '2026-06-12', time: '06:30', location: '校园环路', price: '10', contact: '微信: demo02', note: '需要打卡app', creator: '小刚', status: 'open', taker: '', createdAt: Date.now() - 21600000 },
+        { id: genId(), type: 'class', name: '大学英语（二）', date: '2026-06-09', time: '10:00', location: '外语楼302', price: '20', contact: '手机: 138****5678', note: '', creator: '小李', status: 'open', taker: '', createdAt: Date.now() - 28800000 },
+      ];
+      saveRequests(demos);
+      renderList(currentFilter, document.getElementById('requestList'));
+      renderMyList();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+
+</body>
+</html>
