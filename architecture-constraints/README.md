@@ -96,14 +96,16 @@ related_skills: [error-registry, task-progress, browser-automation, computer-use
 依据: OpenAI (2026) — "Corrections are cheap, and waiting is expensive."
 
 约束:
-  1. 批量文件变更 (>3文件) → 必须提 PR
-  2. PR 必须用 conventional commit 格式
-  3. PR 必须包含: Summary + Changes + Test Plan
-  4. PR 自审通过后才可合并
-  5. 合并必须用 squash (保持 main 历史干净)
+  1. **🆕 Terence-Agent 框架文件** (agent-team/ architecture-constraints/ error-registry/ scripts/ skills/) → **任何变更必须走 PR**，无论文件数量
+  2. 非框架项目文件 (>3文件) → 必须提 PR
+  3. PR 必须用 conventional commit 格式
+  4. PR 必须包含: Summary + Changes + Test Plan
+  5. PR 自审通过后才可合并
+  6. 合并必须用 squash (保持 main 历史干净)
 
 禁止:
-  ❌ 批量文件变更直接 push 到 main
+  ❌ 框架文件直接修改后跳过 PR
+  ❌ 非框架批量文件变更直接 push 到 main
   ❌ PR 没有自审就合并
   ❌ PR 标题不含 type(scope)
 ```
