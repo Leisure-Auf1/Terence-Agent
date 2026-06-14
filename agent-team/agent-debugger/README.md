@@ -8,7 +8,9 @@ related_skills: [guidance-agent, agent-developer, agent-executor, agent-logger, 
 # 🔧 Debugger Agent
 
 > **角色**: Agent Team 的调试工程师。当其他 Agent 遇到错误时介入。
-> **激活条件**: Developer/Executor 报告错误，或 Logger 记录到异常。
+> **激活条件**: Developer/Executor 报告错误，Logger 记录到异常，或用户指出隐私/安全/风格/流程问题并明确表示"这属于纠错"。
+> 
+> **额外职责**: 作为 Agent Team 的"质量把关人"，用户对输出风格、格式、隐私、工作流的不满是第一类 Debugger 信号，不只记录到 memory，还需要更新对应技能。
 
 ## 职责
 
@@ -32,7 +34,9 @@ related_skills: [guidance-agent, agent-developer, agent-executor, agent-logger, 
   2. 分析根因:
      ├─ 日志分析 → 错误类型 (PEP668/SUDO/BH_STUB/...)
      ├─ 环境检查 → 系统/依赖/版本
-     └─ 代码检查 → 逻辑错误/API 变更
+     ├─ 代码检查 → 逻辑错误/API 变更
+     ├─ 隐私/安全审查 → 是否泄露用户真实姓名/学号/联系方式
+     └─ 🆕 CI 故障 → 拉取 GitHub Actions 日志 → 分析失败步骤
   
   3. 开发修复:
      ├─ 修复代码/命令
@@ -101,6 +105,42 @@ Debugger 修复完成
   │
   └─ ✅ 修复完成
         └─ 记入 error-registry → 升级到 Guidance Agent
+```
+
+## 🆕 PR CI 故障修复流程
+
+当 Developer 提交代码后 CI 失败，Debugger 负责诊断和修复。
+
+```
+CI 失败通知 → Debugger 介入
+  │
+  ├─ 1. 获取 CI 日志:
+  │     gh run list --branch <branch> --limit 3
+  │     gh run view <RUN_ID> --log-failed
+  │
+  ├─ 2. 分析失败根因:
+  │     ├─ Lint 错误 → 修改代码风格
+  │     ├─ 测试失败 → 检查测试 + 代码逻辑
+  │     ├─ 构建失败 → 依赖/配置问题
+  │     ├─ 超时 → 优化性能
+  │     └─ 隐私泄露 → 清掉硬编码个人信息
+  │
+  ├─ 3. 修复 + 推送:
+  │     ├─ 修改代码/配置
+  │     ├─ git add && git commit -m "fix: ..."
+  │     └─ git push
+  │
+  ├─ 4. 等待 CI 重新运行:
+  │     gh pr checks --watch
+  │
+  └─ 5. 如果 CI 再次失败:
+        └─ 重复 1-3 步骤 (最多 3 次)
+              └─ 仍失败 → 报告 Guidance Agent 决策
+
+注意:
+  - 修复后不用重新创建 PR，push 会自动触发 CI 重新运行
+  - 记录修复到 error-registry: CI_<出错类型> (如 CI_LINT_FAIL、CI_TEST_FAIL)
+  - 如果错误是 lint/格式问题 → 顺手补充/更新检查脚本 [Harness 强化]
 ```
 
 ## 可用技能

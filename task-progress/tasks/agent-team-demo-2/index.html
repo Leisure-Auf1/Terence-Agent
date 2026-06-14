@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代跑代课·校园互助</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 1. 导航栏 -->
+    <header id="main-header" class="main-header">
+      <h1 id="site-title">🏃 代跑代课 · 校园互助</h1>
+      <button id="nickname-btn" class="nickname-btn">设置昵称</button>
+    </header>
+
+    <!-- 2. 昵称输入弹窗 -->
+    <div id="nickname-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>设置昵称</h3>
+        <input type="text" id="nickname-input" class="modal-input" placeholder="请输入你的昵称" maxlength="12">
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button id="nickname-confirm" class="btn btn-primary">确认</button>
+          <button id="nickname-cancel" class="btn btn-secondary">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Tab 导航 -->
+    <nav id="tab-nav" class="tab-nav">
+      <button class="tab-btn" data-tab="publish">发布需求</button>
+      <button class="tab-btn active" data-tab="list">需求列表</button>
+      <button class="tab-btn" data-tab="mine">我的发布</button>
+    </nav>
+
+    <!-- 4. 页面内容区 -->
+    <main id="main-content">
+      <!-- 4.1 发布表单面板 -->
+      <div class="tab-panel" id="panel-publish" data-panel="publish">
+        <form id="publish-form">
+          <div class="form-group">
+            <label>需求类型</label>
+            <div>
+              <button type="button" class="type-btn active" data-type="errand">🏃 代跑</button>
+              <button type="button" class="type-btn" data-type="class">📚 代课</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>课程名称</label>
+            <input type="text" id="form-course" class="form-input" placeholder="课程名称 / 作业描述" required>
+          </div>
+          <div class="form-group">
+            <label>日期时间</label>
+            <input type="datetime-local" id="form-datetime" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label>地点</label>
+            <input type="text" id="form-location" class="form-input" placeholder="上课 / 交接地点" required>
+          </div>
+          <div class="form-group">
+            <label>价格</label>
+            <input type="number" id="form-price" class="form-input" placeholder="酬劳（元）" min="0" step="0.5" required>
+          </div>
+          <div class="form-group">
+            <label>联系方式</label>
+            <input type="text" id="form-contact" class="form-input" placeholder="微信 / QQ / 手机号" required>
+          </div>
+          <div class="form-group">
+            <label>备注</label>
+            <textarea id="form-note" class="form-textarea" placeholder="其他要求（可选）" rows="3"></textarea>
+          </div>
+          <button type="submit" id="form-submit" class="btn btn-primary btn-block">确认发布</button>
+        </form>
+      </div>
+
+      <!-- 4.2 需求列表面板 -->
+      <div class="tab-panel active" id="panel-list" data-panel="list">
+        <div class="filter-bar" id="filter-bar">
+          <button class="filter-btn active" data-filter="all">全部</button>
+          <button class="filter-btn" data-filter="errand">代跑</button>
+          <button class="filter-btn" data-filter="class">代课</button>
+        </div>
+        <div id="task-list" class="task-list"></div>
+      </div>
+
+      <!-- 4.3 我的发布面板 -->
+      <div class="tab-panel" id="panel-mine" data-panel="mine">
+        <h2 class="panel-title">我的发布</h2>
+        <div id="mine-list" class="task-list"></div>
+      </div>
+    </main>
+
+    <!-- 5. Toast 容器 -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+  <script defer src="app.js"></script>
+</body>
+</html>

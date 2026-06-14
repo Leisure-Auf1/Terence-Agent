@@ -19,10 +19,95 @@ related_skills: [error-registry, task-progress, browser-automation, computer-use
 2. 失败必须沿 Error Cascade 降级，不能跳过
 3. 每种任务类型只能由指定技能处理
 4. 上下文必须按 Scope 裁剪，不能超载
-5. 治理在基础设施层实现，不靠提示词约束
+5. 治理在基础设施层实现，不靠提示词约束 [Harness]
 6. Agent 由事件触发，不靠手动输入启动
 7. 每次执行都在隔离沙箱中运行
+8. 仓库即系统记录 — 所有文档/规范/决策进 Git，不进聊天记录 [Harness]
+9. 机械约束优先 — 可写的规则写成脚本/linter，不可写的才放提示词 [Harness]
+10. 上下文重置 — 大步骤间做 context checkpoint，不拖大 context [Harness]
+11. 生成vs评估分离 — 创造者不审自己产出 [Harness]
+12. 实现项目必须走 PR 流程 — 分支→提交→PR→合并 [PR]
 ```
+
+## 0.3 Harness Engineering 附加约束
+
+> 这些约束直接来自 Harness Engineering 2026 最佳实践，与上面的核心原则互补。
+
+### 0.3.1 机械约束优先 (Mechanical Enforcement)
+
+```
+原则: 用 linter/CI/结构性测试 替代提示词约束
+依据: OpenAI Harness Engineering (2026) — "By enforcing invariants,
+       not micromanaging implementations, we let agents ship fast
+       without undermining the foundation."
+
+约束:
+  1. 每个代码项目必须有 spec → 同时生成验证脚本
+  2. Reviewer 必须优先运行机械检查 → 再审核逻辑
+  3. 机械检查脚本本身必须受版本控制 (进 Git)
+  4. 任何重复发生的错误 → 先写成检查脚本 → 再写修复
+
+禁止:
+  ❌ 用提示词约束代替脚本检查
+  ❌ Reviewer 跳过检查脚本直接人工审核
+  ❌ 调试器修复后不补充检查脚本
+```
+
+### 0.3.2 上下文重置 (Context Reset)
+
+```
+原则: 长会话积累噪声和错误假设，定期重置上下文更可靠
+依据: Kypros Vassiliou (2026) — "Fresh runs with clear artifacts +
+       next steps + compact state outperform dragging one giant
+       context window."
+
+约束:
+  1. 每 3+ 个工具调用后做 context checkpoint
+  2. 每个大阶段 (Design/Impl/Review) 后做上下文重置
+  3. 重置时写入 artifact: 已完成摘要 + 未完成清单 + 关键决策
+  4. 禁止跳过多步后才做 checkpoint
+
+例子:
+  Phase 1: 写 spec → artifact: spec.md + spec-validate.sh
+  → 上下文重置 →
+  Phase 2: 实现 Worker Agent → 读取 spec.md 即可，不用看 Phase 1 的整个对话
+```
+
+### 0.3.3 仓库即系统记录 (Repository as System of Record)
+
+```
+原则: 所有知识进 Git，不进聊天记录
+依据: OpenAI Harness Engineering (2026) — "Give Codex a map,
+       not a 1,000-page instruction manual."
+
+约束:
+  1. 每个项目必须在 projects/ 下有独立目录
+  2. 必须包含 README.md + 至少一个规范文档 (SPEC.md / DESIGN.md / USAGE.md)
+  3. 所有架构决策写入 docs/decisions/*.md
+  4. 禁止依赖聊天历史作为知识来源
+  5. AGENTS.md (可选): 约 100 行的 Agent 行为指南
+```
+
+### 0.3.4 PR 流程约束 (PR Workflow Gate)
+
+```
+原则: 任何产生代码/配置/文档的实现项目，交付必须走 PR
+依据: OpenAI (2026) — "Corrections are cheap, and waiting is expensive."
+
+约束:
+  1. 批量文件变更 (>3文件) → 必须提 PR
+  2. PR 必须用 conventional commit 格式
+  3. PR 必须包含: Summary + Changes + Test Plan
+  4. PR 自审通过后才可合并
+  5. 合并必须用 squash (保持 main 历史干净)
+
+禁止:
+  ❌ 批量文件变更直接 push 到 main
+  ❌ PR 没有自审就合并
+  ❌ PR 标题不含 type(scope)
+```
+
+---
 
 ## 0.5 LangChain 架构映射 (参考)
 
@@ -200,6 +285,9 @@ post-check:
 | 跳过 error-registry 检查 | 记入 error-registry `SKIP_KNOWN_FIX` |
 | 未更新 task-progress | 记入 error-registry `PROGRESS_MISSING` |
 | 未执行 Post-Task Retrospective | 记入 error-registry `SKIP_RETROSPECTIVE` |
+| **🆕 批量文件变更未走 PR** | 记入 error-registry `SKIP_PR_GATE` |
+| **🆕 跳过机械检查直接审核** | 记入 error-registry `SKIP_MECHANICAL_CHECK` |
+| **🆕 大步骤间未做 context checkpoint** | 记入 error-registry `CTX_CHECKPOINT_MISSING` |
 
 ---
 
@@ -220,12 +308,18 @@ post-check:
   3. 查重复: "这个错以前犯过吗?"
      → 查 error-registry 对应条目
      → 重复了 → 记入 REPEAT_ERROR → 强化修复
-  4. 学教训: "下次如何避免?"
+  4. 机械检查: "有可写成脚本的检查项吗?"
+     → 有 → 创建/更新检查脚本 [Harness 强化]
+     → 无 → 跳过
+  5. PR 检查: "产出是否需要走 PR?"
+     → 批量变更/新功能 → 走 PR 流程 [PR 门控]
+     → 不需要 → 确认
+  6. 学教训: "下次如何避免?"
      → 更新 error-registry 的修复方案
      → 更新 architecture-constraints (如果需要加新约束)
-  5. 固化: "需要保存为 skill 吗?"
+  7. 固化: "需要保存为 skill 吗?"
      → 如果这个工作流是重复性的 → 创建/更新 skill
-  6. 收尾: 更新 task-progress → 标记阶段完成 + 记录复盘结果
+  8. 收尾: 更新 task-progress → 标记阶段完成 + 记录复盘结果
 ```
 
 ### 复盘触发时机
