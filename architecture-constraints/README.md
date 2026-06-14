@@ -80,13 +80,13 @@ related_skills: [error-registry, task-progress, browser-automation, computer-use
 原则: 所有知识进 Git，不进聊天记录
 依据: OpenAI Harness Engineering (2026) — "Give Codex a map,
        not a 1,000-page instruction manual."
-
 约束:
   1. 每个项目必须在 projects/ 下有独立目录
   2. 必须包含 README.md + 至少一个规范文档 (SPEC.md / DESIGN.md / USAGE.md)
   3. 所有架构决策写入 docs/decisions/*.md
-  4. 禁止依赖聊天历史作为知识来源
-  5. AGENTS.md (可选): 约 100 行的 Agent 行为指南
+  4. **🆕 AGENTS.md 作为入口目录** — 约 100 行，指向结构化文档知识库
+  5. 禁止依赖聊天历史作为知识来源
+  6. AGENTS.md (可选): 约 100 行的 Agent 行为指南
 ```
 
 ### 0.3.4 PR 流程约束 (PR Workflow Gate)
@@ -278,7 +278,75 @@ computer-use-mcp (L4) 失败:
 
 ---
 
+## 4.5 Feedforward/Feedback 体系 — Harness Engineering 分类
+
+> **参考**: Martin Fowler — "A coding agent has none of the tacit knowledge that human developers bring."
+>
+> Harness 机制分两轴：方向 (Feedforward → Feedback) × 类型 (Computational → Inferential)
+
+| 方向 | 类型 | 我们的实现 | 作用时机 |
+|:-----|:-----|:-----------|:---------|
+| **Feedforward (Guide)** 🧭 | Computational | `scripts/check-preflight.sh` | 项目开始前 |
+| **Feedforward (Guide)** 🧭 | Inferential | `AGENTS.md` + `architecture-constraints` | 上下文加载时 |
+| **Feedback (Sensor)** 📡 | Computational | `error-registry` + `event-report` 违反检测 | 项目完成后 |
+| **Feedback (Sensor)** 📡 | Inferential | Post-Task 复盘 (第0步事件报告检查) | 项目完成后 |
+
+**约束**:
+- Feedforward 和 Feedback 必须配对使用，缺一不可
+- 只有 Feedforward 没有 Feedback → 无法自我纠错
+- 只有 Feedback 没有 Feedforward → 重复犯同样的错
+- Computational 优先于 Inferential（机械约束 > 提示词约束）
+- **🆕 隐私审查优先** — 任何涉及用户个人信息的内容必须有隐私审查步骤
+
+---
+
+## 4.6 隐私规则 — PII 零容忍
+
+> **规则**: 仓库中**严禁**出现任何真实用户个人信息（姓名、学号、电话、地址等）。
+> 违反即记入 error-registry `PII_LEAK` — **严重违规**。
+
+### 约束
+
+```
+1. 所有示例/演示/模板中的人名 → [姓名] 或 [已脱敏]
+2. 所有示例中的学号 → [学号]
+3. 班级信息 → [班级]
+4. 联系方式 → [联系方式]
+5. delegate_task 上下文中必须过滤真实姓名
+6. 代码、注释、测试用例、日志文件 → 同样适用上述规则
+7. 遇到用户提供个人信息的场景：
+   a. 使用时脱敏（日志/输出中用占位符替代）
+   b. 不写入任何持久化文件（event-report / error-registry / skill 等）
+   c. 仅在必要时传入内存变量，使用后清除
+```
+
+### 例外
+
+仅用户**明确要求**在产出物中包含个人信息时（如实验报告 docx 需显示姓名学号），可以在用户指定的最终产出中使用，但：
+- 中间过程（日志、代码、skill）不得包含
+- 使用后立即清理
+
+---
+
 ## 5. 技能调用约束
+
+### 5.1 机械约束优先（Harness Engineering）
+
+将 pre-flight 检查从"提示词清单"升级为**可执行脚本**：
+
+```bash
+# 每次开始新项目前，必须先运行 preflight 检查脚本
+cd ~/Terence-Agent && bash scripts/check-preflight.sh
+```
+
+脚本产出 `.hermes/preflight-YYYY-MM-DD.md`，作为项目的 **context checkpoint** 入口。
+
+**约束**:
+- ❌ 不能用"我检查过了"代替脚本执行
+- ❌ 不能跳过 preflight 直接开始工作
+- ✅ 脚本输出 = 当前仓库状态的唯一权威来源
+
+### 5.2 提示词清单（作为脚本的补充说明）
 
 ```yaml
 # 调用前必须执行
@@ -286,6 +354,8 @@ pre-check:
   - "当前任务类型是什么?" → 对照上下文裁剪规则
   - "之前报过什么错?" → 查 error-registry 对应条目
   - "是否有进行中的任务?" → 查 task-progress
+  - "仓库当前状态是什么?" → git status + 查看最近修改的文件（确保基于最新状态）
+  - "当前可用技能和模板有哪些?" → skills_list + 查看 paper-writing/ agent-team/ 目录
 
 # 调用后必须执行
 post-check:
@@ -305,7 +375,8 @@ post-check:
 | 重复已报过的错误 | 记入 error-registry `REPEAT_ERROR` |
 | 跳过 error-registry 检查 | 记入 error-registry `SKIP_KNOWN_FIX` |
 | 未更新 task-progress | 记入 error-registry `PROGRESS_MISSING` |
-| 未执行 Post-Task Retrospective | 记入 error-registry `SKIP_RETROSPECTIVE` |
+| 🆕 实现项目前跳过 preflight 检查 | 记入 error-registry `PREFLIGHT_SKIPPED` |
+| 🆕 项目完成后未记录到 event-report | 记入 error-registry `EVENT_REPORT_MISSING` |
 | **🆕 批量文件变更未走 PR** | 记入 error-registry `SKIP_PR_GATE` |
 | **🆕 跳过机械检查直接审核** | 记入 error-registry `SKIP_MECHANICAL_CHECK` |
 | **🆕 大步骤间未做 context checkpoint** | 记入 error-registry `CTX_CHECKPOINT_MISSING` |
@@ -324,6 +395,9 @@ post-check:
 
 ```yaml
 复盘步骤:
+  0. 事件报告: "这次操作是否已记录到 event-report?"
+     → 未记录 → 立即写入 event-report/YYYY-MM-DD.md
+     → 已记录 → 确认
   1. 读日志: "这次执行有没有报错?"
      → 有 → 分析根因 → 记入 error-registry
      → 无 → 跳过
