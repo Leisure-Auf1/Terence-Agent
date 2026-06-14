@@ -86,7 +86,7 @@ related_skills: [error-registry, task-progress, browser-automation, computer-use
   3. 所有架构决策写入 docs/decisions/*.md
   4. **🆕 AGENTS.md 作为入口目录** — 约 100 行，指向结构化文档知识库
   5. 禁止依赖聊天历史作为知识来源
-  6. AGENTS.md (可选): 约 100 行的 Agent 行为指南
+
 ```
 
 ### 0.3.4 PR 流程约束 (PR Workflow Gate)
@@ -344,7 +344,19 @@ cd ~/Terence-Agent && bash scripts/check-preflight.sh
 **约束**:
 - ❌ 不能用"我检查过了"代替脚本执行
 - ❌ 不能跳过 preflight 直接开始工作
+- ❌ 不能依赖聊天记忆中的旧仓库状态 — **必须实时查看当前状态**
 - ✅ 脚本输出 = 当前仓库状态的唯一权威来源
+
+**🆕 跨会话仓库状态检查**:
+```bash
+# 每次新开始/跨会话工作前，必须执行：
+cd ~/Terence-Agent && \
+  git status && \
+  git log --oneline -5 && \
+  ls projects/
+
+# 确保不依赖旧对话中看到的旧状态
+```
 
 ### 5.2 提示词清单（作为脚本的补充说明）
 
