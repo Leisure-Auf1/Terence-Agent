@@ -20,10 +20,11 @@
 │   │   ├── src/
 │   │   ├── venv/
 │   │   └── artifacts/
-│   └── <project-b>/         ← 项目 B（独立 venv + 代码）
-│       ├── src/
-│       ├── venv/
-│       └── artifacts/
+│   ├── <project-b>/         ← 项目 B（独立 venv + 代码）
+│   │   ├── src/
+│   │   ├── venv/
+│   │   └── artifacts/
+│   └── computer-setup/      ← 💻 电脑维护（系统配置/驱动/维护操作）
 │
 ├── event-report/            ← 📋 事件报告（按日操作记录）
 ├── error-registry/          ← 报错表（共用的认知记忆）

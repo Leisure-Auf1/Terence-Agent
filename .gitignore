@@ -8,3 +8,6 @@ Thumbs.db
 
 # Custom
 *.log
+
+# Nested project repos (各自独立管理)
+projects/campus-task/
