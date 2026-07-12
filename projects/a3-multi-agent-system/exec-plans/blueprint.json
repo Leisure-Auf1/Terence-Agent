@@ -1,199 +1,37 @@
 {
-  "metadata": {
-    "title": "Python装饰器与闭包深度攻坚",
-    "student_level": "初级→中级",
-    "total_nodes": 3,
-    "version": "1.0"
+  "blueprint_id": "BP-GIT-INTERNAL-002",
+  "subject": "Git Core Infrastructure & DAG Topology",
+  "target_learner_profile": {
+    "persona": "visual_learner_hates_magic",
+    "description": "极度讨厌机械记忆 Git 命令（如 git add/commit），必须看懂 .git/objects 物理底层的有向无环图与哈希指针链接才能心安的底层逻辑控。"
   },
-  "nodes": [
+  "global_constraints": {
+    "min_review_score": 85,
+    "forbidden_keywords": ["os.system", "subprocess", "eval"]
+  },
+  "knowledge_nodes": [
     {
-      "id": "node-1",
-      "title": "从函数是一等公民到第一个装饰器",
-      "difficulty": "入门",
-      "prerequisites": [
-        "Python 基础语法（函数定义、调用、返回值）",
-        "变量作用域的基本概念"
-      ],
-      "learning_objectives": [
-        "理解 Python 中函数是一等公民（可以赋值给变量、作为参数传递、作为返回值）",
-        "理解闭包的本质：内部函数捕获外部函数的局部变量",
-        "掌握 @ 装饰器语法糖及其等价写法",
-        "能写出第一个实用的装饰器函数"
-      ],
-      "content_outline": {
-        "key_concepts": [
-          "函数是对象 — type, id, 赋值给变量",
-          "函数作为参数传递 — 高阶函数 map/filter 的底层原理",
-          "函数内部定义函数 — 嵌套作用域",
-          "闭包（closure）— 内部函数「记住」外部变量",
-          "@decorator 只是 syntactic sugar：wrapper = decorator(wrapper)",
-          "无参装饰器的标准模板"
-        ],
-        "analogy_or_comparison": "❌ 普通写法：每次手动记录函数的开始和结束时间，复制粘贴 time.time() 到每个函数里\n✅ 装饰器写法：写一个 @timer，想给哪个函数计时就贴一行，像给函数「贴标签」\n\n对比示例：\n```python\n# 原始需求：统计函数执行时间\n# 方案A（不优雅）—— 每个函数里写两遍 time.time()\ndef slow_math_a(n):\n    start = time.time()\n    result = sum(i**2 for i in range(n))\n    end = time.time()\n    print(f'slow_math_a took {end-start:.3f}s')\n    return result\n\ndef another_func(n):\n    start = time.time()\n    ...\n    end = time.time()\n    ...  # 无穷重复，烦不烦？\n\n# 方案B（装饰器）—— 写一次，到处用\n@timer\ndef slow_math_b(n):\n    return sum(i**2 for i in range(n))\n\n@timer\ndef another_func(n):\n    ...  # 清爽！\n```",
-        "code_demo": "```python\n# 从函数是对象开始\nimport time\n\n# 1. 函数赋值给变量\ndef greet(name):\n    return f'你好, {name}'\nsay_hi = greet\nprint(say_hi('Alice'))  # 你好, Alice\n\n# 2. 闭包实验：内部函数记住外部变量\ndef outer(msg):\n    def inner(name):\n        return f'{msg}, {name}!'\n    return inner  # 返回函数，不执行\n\nhello = outer('你好')\nbye = outer('再见')\nprint(hello('小明'))  # 你好, 小明!\nprint(bye('小明'))    # 再见, 小明!\n# msg 变量在 outer() 结束后仍然被 inner 记着 —— 这就是闭包！\n\n# 3. 计时装饰器\ndef timer(func):\n    def wrapper(*args, **kwargs):\n        start = time.perf_counter()\n        result = func(*args, **kwargs)\n        elapsed = time.perf_counter() - start\n        print(f'{func.__name__} 执行耗时: {elapsed:.4f}s')\n        return result\n    return wrapper\n\n# 等价于：slow_math = timer(slow_math)\n@timer\ndef slow_math(n):\n    return sum(i**2 for i in range(n))\n\nslow_math(1000000)  # slow_math 执行耗时: 0.XXXXs\n```"
-      },
-      "exercises": [
-        {
-          "id": "ex-1-1",
-          "type": "coding",
-          "prompt": "实现一个名为 `logger` 的装饰器，它会在被装饰函数执行前打印 `[LOG] 正在执行 {函数名}...`，执行后打印 `[LOG] {函数名} 执行完毕`。\n\n```python\ndef logger(func):\n    # 在这里编写你的代码\n    pass\n\n@logger\ndef add(a, b):\n    return a + b\n\nadd(3, 5)\n# 期望输出：\n# [LOG] 正在执行 add...\n# [LOG] add 执行完毕\n```",
-          "test_cases": [
-            {"input": "add(3, 5)", "expected": "result=8, stdout contains '[LOG] 正在执行 add...' and '[LOG] add 执行完毕'"},
-            {"input": "add(100, 200)", "expected": "result=300, stdout contains both LOG lines"},
-            {"input": "add.__name__ == 'wrapper' or add.__name__ == 'logger'", "expected": "此处可能返回 wrapper（暂不要求 functools.wraps）"}
-          ],
-          "hints": [
-            "在 wrapper 内部，先打印 [LOG] 正在执行 ...，然后调用原始函数并保存返回值，再打印 [LOG] ... 执行完毕，最后返回结果",
-            "被装饰的函数名字可以通过 func.__name__ 获取",
-            "记得用 *args 和 **kwargs 让 wrapper 能接受任意参数"
-          ]
-        },
-        {
-          "id": "ex-1-2",
-          "type": "coding",
-          "prompt": "实现名为 `repeat(n)` 的装饰器，让被装饰函数重复执行 n 次，并返回所有结果的列表。\n\n```python\ndef repeat(n):\n    # 在这里编写你的代码\n    pass\n\n@repeat(3)\ndef say_hi(name):\n    return f'你好, {name}'\n\n# 相当于 say_hi = repeat(3)(say_hi)\n# print(say_hi('Alice'))\n# 期望输出：[你好, Alice, 你好, Alice, 你好, Alice]\n```",
-          "test_cases": [
-            {"input": "say_hi('Alice')", "expected": "['你好, Alice', '你好, Alice', '你好, Alice']"},
-            {"input": "结果列表长度为 3", "expected": "True"},
-            {"input": "say_hi('Bob') 返回列表的每个元素都是 '你好, Bob'", "expected": "True"}
-          ],
-          "hints": [
-            "repeat(n) 本身不是装饰器，它是一个返回装饰器的函数 —— 这叫「带参数的装饰器」",
-            "结构是三层：def repeat(n): → def decorator(func): → def wrapper(*args, **kwargs):",
-            "在内层 wrapper 中用 for _ in range(n) 收集结果到列表"
-          ]
-        }
-      ]
+      "node_id": "node_1",
+      "title": "内容寻址存储与 Blob 对象的哈希计算",
+      "dependencies": [],
+      "core_concept": "理解 Git 如何通过 SHA-1 哈希算法将文件内容转化为唯一的键，并用 Python 手动仿真实现解压读取 .git/objects 的核心机制。"
     },
     {
-      "id": "node-2",
-      "title": "带参数装饰器、functools.wraps 与高级装饰器模式",
-      "difficulty": "进阶",
-      "prerequisites": [
-        "Node 1：理解闭包与无参装饰器",
-        "函数默认参数与可变参数 *args, **kwargs"
-      ],
-      "learning_objectives": [
-        "掌握带参数装饰器的三层嵌套结构",
-        "理解 @functools.wraps 的必要性和原理",
-        "能实现带重试、限流等实用装饰器",
-        "理解类装饰器的基本写法"
-      ],
-      "content_outline": {
-        "key_concepts": [
-          "带参装饰器三层结构：外层取参数 → 中层取函数 → 内层取调用参数",
-          "functools.wraps：为什么丢失元信息（__name__, __doc__）是个大问题",
-          "functools.wraps 实际上也是一个装饰器，它帮我们把 wrapper 伪装成原函数",
-          "类装饰器：@classmethod, @staticmethod, @property 是内置例子",
-          "类实现装饰器：__call__ 魔术方法"
-        ],
-        "analogy_or_comparison": "❌ 不带参装饰器就像买一杯固定口味的奶茶（只装饰单个函数）\n✅ 带参装饰器就像自助奶茶机：你可以选糖度、加料（传递参数控制行为）\n\n对比两者的实现差异：\n```python\n# 不带参（2层）—— 固定逻辑\ndef timer(func):\n    def wrapper(*args, **kwargs):\n        ...\n    return wrapper\n\n# 带参（3层）—— 像工厂，先选配置，再加工函数\ndef retry(max_attempts=3):\n    def decorator(func):       # 这层才是真正的「装饰器」\n        def wrapper(*args, **kwargs):\n            for i in range(max_attempts):\n                try:\n                    return func(*args, **kwargs)\n                except Exception:\n                    if i == max_attempts - 1:\n                        raise\n        return wrapper\n    return decorator\n\n# 使用：\n@retry(max_attempts=5)  # 第一对括号调用 retry(5)，返回 decorator\ndef fetch_data():\n    ...\n```",
-        "code_demo": "```python\nimport functools\nimport time\n\n# functools.wraps 演示\n\ndef naive_timer(func):\n    '''一个朴素的计时器装饰器'''\n    def wrapper(*args, **kwargs):\n        '''我是 wrapper 的文档'''\n        start = time.time()\n        result = func(*args, **kwargs)\n        print(f'{time.time()-start:.3f}s')\n        return result\n    return wrapper\n\ndef smart_timer(func):\n    '''一个聪明的计时器装饰器'''\n    @functools.wraps(func)  # 这一行把 func 的 __name__, __doc__ 等复制到 wrapper\n    def wrapper(*args, **kwargs):\n        start = time.time()\n        result = func(*args, **kwargs)\n        print(f'{time.time()-start:.3f}s')\n        return result\n    return wrapper\n\n@naive_timer\ndef add_naive(a, b):\n    '''两数相加'''\n    return a + b\n\n@smart_timer\ndef add_smart(a, b):\n    '''两数相加'''\n    return a + b\n\nprint(add_naive.__name__)   # 输出: wrapper  ← 元信息丢失！\nprint(add_smart.__name__)   # 输出: add_smart ← 有 @wraps 就对了\nprint(add_smart.__doc__)    # 输出: 两数相加\n```\n\n```python\n# 用类实现装饰器\nclass CountCalls:\n    def __init__(self, func):\n        self.func = func\n        self.count = 0\n    \n    def __call__(self, *args, **kwargs):\n        self.count += 1\n        print(f'第 {self.count} 次调用 {self.func.__name__}')\n        return self.func(*args, **kwargs)\n\n@CountCalls\ndef hello(name):\n    return f'你好, {name}'\n\nhello('小明')  # 第 1 次调用 hello\nhello('小红')  # 第 2 次调用 hello\n# CountCalls 实例通过 __call__ 让自己变得「可调用」\n```"
-      },
-      "exercises": [
-        {
-          "id": "ex-2-1",
-          "type": "coding",
-          "prompt": "实现一个带重试机制的装饰器 `@retry(max_tries=3, delay=1)`，当被装饰函数抛出异常时自动重试，重试间隔 delay 秒（用 time.sleep），重试 max_tries 次后仍失败则抛出最后一次异常。\n\n要求：\n- 使用 functools.wraps 保持元信息\n- 每次重试前打印 [RETRY] 第 X 次尝试失败，即将重试...\n\n```python\nimport time\nimport functools\n\ndef retry(max_tries=3, delay=1):\n    # 在这里编写你的代码\n    pass\n\n@retry(max_tries=3, delay=0.1)\ndef unstable_api(dangerous=False):\n    if dangerous:\n        raise ValueError('服务器开小差了')\n    return '数据获取成功'\n\nprint(unstable_api(False))  # 一次成功\nprint(unstable_api(True))   # 重试 3 次后抛出 ValueError\n```",
-          "test_cases": [
-            {"input": "unstable_api(False)", "expected": "返回 '数据获取成功'，不打印重试信息"},
-            {"input": "unstable_api(True)", "expected": "抛出 ValueError('服务器开小差了')，stdout 包含 2 条 [RETRY] 日志"},
-            {"input": "retry(max_tries=5, delay=0.01)", "expected": "能正常工作，注意 max_tries 和 delay 参数可自定义"},
-            {"input": "unstable_api.__name__ == 'unstable_api'", "expected": "True（使用了 @functools.wraps）"}
-          ],
-          "hints": [
-            "三层结构：def retry(max_tries, delay): → def decorator(func): → def wrapper(*args, **kwargs):",
-            "在 wrapper 中用 try/except 包裹 func()，捕获所有异常，用 for 循环控制重试次数",
-            "最后一次失败要用 raise 原异常（不加 raise 会吞掉错误）",
-            "别忘了 @functools.wraps(func) 放在 return wrapper 之前的内层函数上"
-          ]
-        },
-        {
-          "id": "ex-2-2",
-          "type": "coding",
-          "prompt": "实现一个缓存装饰器 `@cache_ttL(seconds=30)`，在 seconds 秒内对相同参数调用返回缓存结果，超过时间后重新计算。\n\n要求：\n- 使用一个字典做缓存，key 是参数元组，value 是 (结果, 过期时间戳)\n- 使用 functools.wraps\n\n```python\nimport time\nimport functools\n\ndef cache_ttl(seconds=30):\n    # 在这里编写你的代码\n    pass\n\n@cache_ttl(seconds=2)\ndef expensive_calc(n):\n    print('正在计算...')\n    return sum(i**2 for i in range(n))\n\nprint(expensive_calc(1000))  # 第一次：打印 正在计算...\nprint(expensive_calc(1000))  # 第二次（2秒内）：直接返回缓存，不打印\nprint(expensive_calc(1000))  # 第二次（2秒内）：直接返回缓存，不打印\ntime.sleep(2.1)             \nprint(expensive_calc(1000))  # 缓存过期：重新打印 正在计算...\n```",
-          "test_cases": [
-            {"input": "第一次调用 expensive_calc(1000)", "expected": "stdout 包含 '正在计算...'，返回计算结果"},
-            {"input": "2 秒内再次调用 expensive_calc(1000)", "expected": "stdout 不包含 '正在计算...'，返回相同结果"},
-            {"input": "调用 expensive_calc(500)（不同参数）", "expected": "stdout 包含 '正在计算...'（不同参数单独缓存）"},
-            {"input": "time.sleep(2.1) 后调用 expensive_calc(1000)", "expected": "stdout 再次包含 '正在计算...'（缓存过期）"}
-          ],
-          "hints": [
-            "缓存字典要放在外层函数（带参层）中，这样每个 @cache_ttl(seconds=...) 都是独立缓存",
-            "缓存 key：使用 (args, tuple(sorted(kwargs.items()))) 作为字典键",
-            "过期时间戳 = time.time() + seconds",
-            "取缓存时要检查 time.time() > 过期时间戳，是则认为过期并删除重新计算"
-          ]
-        }
-      ]
+      "node_id": "node_2",
+      "title": "快照与 Tree 对象的目录树构建",
+      "dependencies": ["node_1"],
+      "core_concept": "解密 Git 如何用 Tree 对象存储文件名与权限，仿真实现将多个 Blob 组合为一个静态 Snapshot 的 AST 逻辑。"
     },
     {
-      "id": "node-3",
-      "title": "装饰器堆叠、property 原理与框架实战",
-      "difficulty": "攻坚",
-      "prerequisites": [
-        "Node 1 & Node 2：掌握无参/带参装饰器",
-        "了解 Python 描述符协议的基本概念（__get__, __set__）"
-      ],
-      "learning_objectives": [
-        "深刻理解装饰器堆叠的执行顺序（从下到上应用，从上到下执行）",
-        "理解 @property, @staticmethod, @classmethod 的底层实现原理",
-        "能自己实现一个 classmethod 和 property 装饰器",
-        "了解装饰器在 Web 框架（Flask 路由）、缓存、权限校验中的典型应用"
-      ],
-      "content_outline": {
-        "key_concepts": [
-          "装饰器堆叠顺序：@A @B @C 等价于 A(B(C(func))) — 先让 C 给函数化妆，再让 B 化妆，最后 A 化妆",
-          "执行时的数据流方向与堆叠方向相反：func → C 的 wrapper → B 的 wrapper → A 的 wrapper → 调用者",
-          "@property 是描述符协议的应用，本质是一个定义了 __get__ 的类",
-          "Flask 中 @app.route('/path') 等价于注册路由 + 装饰函数",
-          "装饰器常见的应用模式：认证、日志、缓存、类型检查、事务"
-        ],
-        "analogy_or_comparison": "❌ 错误直觉：@A @B @C 像叠被子，先叠 A 再叠 B 最后叠 C\n✅ 正确理解：像套娃——最内层是 C，C 外面套 B，B 外面套 A。调用时从最外层 A 往里走，A 调用 B，B 调用 C，C 调用原始函数\n\n堆叠执行顺序图：\n```\n@timer          # 第 3 层（最外层）\n@retry(3)       # 第 2 层\n@cache_ttl(5)   # 第 1 层（最内层）\ndef get_data(url):\n    ...\n\n# 等价于：get_data = timer(retry(3)(cache_ttl(5)(get_data)))\n\n# 调用时执行顺序：\n# 1. timer.wrapper → 开始计时\n# 2.   retry.wrapper → 准备重试\n# 3.     cache_ttl.wrapper → 检查缓存\n# 4.       get_data(url) → 真正执行\n# 5.     cache_ttl.wrapper → 更新缓存\n# 6.   retry.wrapper → 捕获异常或返回\n# 7. timer.wrapper → 结束计时\n```",
-        "code_demo": "```python\n# ======== 自己实现 @property ========\n# property 本质上是一个描述符类\n\nclass Property:\n    '''自己实现的简化版 @property'''\n    def __init__(self, fget=None, fset=None, fdel=None):\n        self.fget = fget\n        self.fset = fset\n        self.fdel = fdel\n    \n    def __get__(self, instance, owner):\n        if instance is None:\n            return self  # 类上访问属性时返回描述符本身\n        return self.fget(instance)\n    \n    def __set__(self, instance, value):\n        if self.fset is None:\n            raise AttributeError('cannot set attribute')\n        self.fset(instance, value)\n    \n    def setter(self, fset):\n        return type(self)(self.fget, fset, self.fdel)\n\n# 使用自己的 Property\nclass Circle:\n    def __init__(self, radius):\n        self._radius = radius\n    \n    @Property                           # ① area = Property(area)\n    def area(self):\n        return 3.14159 * self._radius ** 2\n    \n    @Property                           # ② radius = Property(radius)  — 用我们自己的 Property\n    def radius(self):\n        return self._radius\n    \n    @radius.setter                      # ③ radius = Property(radius).setter(radius_setter)\n    def radius(self, value):\n        if value < 0:\n            raise ValueError('半径不能为负')\n        self._radius = value\n\n# ======== 装饰器在框架中的典型应用 ========\n# Flask 风格的简单路由（演示原理）\nclass FlaskLike:\n    def __init__(self):\n        self._routes = {}\n    \n    def route(self, path):\n        def decorator(func):\n            self._routes[path] = func\n            return func  # 注意这里返回原函数，只是注册不包装\n        return decorator\n\napp = FlaskLike()\n\n@app.route('/hello')\ndef hello():\n    return 'Hello World'\n\n# app._routes 现在是 {'/hello': <function hello>}\n# 当请求来到 /hello 时调用 app._routes['/hello']()\n\n# ======== 装饰器用于权限校验 ========\ndef require_auth(user_role):\n    def decorator(func):\n        @functools.wraps(func)\n        def wrapper(*args, **kwargs):\n            # 假设从某个地方获取当前用户角色\n            current_user = get_current_user_role()\n            if current_user != user_role:\n                raise PermissionError(f'需要 {user_role} 权限')\n            return func(*args, **kwargs)\n        return wrapper\n    return decorator\n\n@require_auth('admin')\ndef delete_user(user_id):\n    print(f'删除用户 {user_id}')\n```"
-      },
-      "exercises": [
-        {
-          "id": "ex-3-1",
-          "type": "coding",
-          "prompt": "实现一个简易版的 `@property` 装饰器（命名为 `custom_property`），使它至少支持 getter 和 setter。\n\n要求：\n- 不使用 Python 内置的 @property\n- 能通过 @custom_property 装饰一个方法作为 getter\n- 能通过 @<属性名>.setter 装饰 setter 方法\n- 满足基本的 get/set 行为和只读保护\n\n```python\nclass custom_property:\n    def __init__(self, fget=None, fset=None):\n        # 在这里编写你的代码\n        pass\n    \n    def __get__(self, instance, owner):\n        # 在这里编写你的代码\n        pass\n    \n    def __set__(self, instance, value):\n        # 在这里编写你的代码\n        pass\n    \n    def setter(self, func):\n        # 在这里编写你的代码\n        pass\n\n\n# ====== 测试代码 ======\nclass Temperature:\n    def __init__(self, celsius=0):\n        self._celsius = celsius\n    \n    @custom_property\n    def celsius(self):\n        return self._celsius\n    \n    @celsius.setter\n    def celsius(self, value):\n        if value < -273.15:\n            raise ValueError('温度不能低于绝对零度')\n        self._celsius = value\n    \n    @custom_property\n    def fahrenheit(self):\n        return self._celsius * 9/5 + 32\n\n\nt = Temperature(25)\nprint(t.celsius)       # 25\nt.celsius = 30\nprint(t.fahrenheit)    # 86.0\ntry:\n    t.fahrenheit = 100  # 应该抛出 AttributeError (只读)\nexcept AttributeError:\n    print('只读属性不可设置')\ntry:\n    t.celsius = -300    # 应该抛出 ValueError\nexcept ValueError:\n    print('检测到非法温度')\n```",
-          "test_cases": [
-            {"input": "t = Temperature(25); t.celsius", "expected": "25"},
-            {"input": "t = Temperature(25); t.fahrenheit", "expected": "77.0"},
-            {"input": "t = Temperature(25); t.celsius = 30; t.celsius", "expected": "30"},
-            {"input": "t.fahrenheit = 100", "expected": "抛出 AttributeError（只读属性）"},
-            {"input": "t.celsius = -300", "expected": "抛出 ValueError（温度校验）"},
-            {"input": "Temperature.celsius 是一个 custom_property 实例", "expected": "True（在类上访问描述符返回自身）"}
-          ],
-          "hints": [
-            "实现描述符协议：类中定义 __get__ 和 __set__ 方法，Python 会把这类实例自动当作描述符",
-            "__get__(self, instance, owner) 中，instance 是实例（None 表示类访问），owner 是类本身",
-            "setter 方法应该返回一个新的 custom_property 实例（复制已有的 fget，添上新的 fset）",
-            "没有 setter 的属性在 __set__ 中抛出 AttributeError('can't set attribute')"
-          ]
-        },
-        {
-          "id": "ex-3-2",
-          "type": "coding",
-          "prompt": "实现一个装饰器堆叠顺序验证实验。定义三个装饰器 @A, @B, @C，每个装饰器在执行前后打印自己的名字。然后堆叠使用它们，通过观察打印顺序验证「最外层最先进入，最内层最先执行原函数」的规则。\n\n要求：\n- 每个装饰器打印 `{name} 开始` 和 `{name} 结束`\n- 堆叠顺序为 @A @B @C\n- 执行 `@A @B @C def test(): print('--- 执行原始函数 ---')`\n\n```python\ndef make_decorator(name):\n    # 在这里编写你的代码\n    pass\n\nA = make_decorator('A')\nB = make_decorator('B')\nC = make_decorator('C')\n\n@A\n@B\n@C\ndef test():\n    print('--- 执行原始函数 ---')\n\ntest()\n# 期望输出：\n# A 开始\n# B 开始\n# C 开始\n# --- 执行原始函数 ---\n# C 结束\n# B 结束\n# A 结束\n```",
-          "test_cases": [
-            {"input": "执行 test() 的第一行输出", "expected": "'A 开始'"},
-            {"input": "执行 test() 的第四行输出", "expected": "'--- 执行原始函数 ---'"},
-            {"input": "执行 test() 的最后一行输出", "expected": "'A 结束'"},
-            {"input": "打印顺序为 A→B→C→原始函数→C→B→A", "expected": "True（验证洋葱模型）"}
-          ],
-          "hints": [
-            "make_decorator(name) 应该返回一个装饰器函数，这个装饰器返回一个打印开始和结束的 wrapper",
-            "要看到 A 先打印开始：@A @B @C fn = A(B(C(fn))) — 先应用 A，所以 A 的 wrapper 先打印",
-            "A 的 wrapper 打印'开始'后调用 B 的 wrapper，最后才调用原始函数，形成括号状嵌套"
-          ]
-        }
-      ]
+      "node_id": "node_3",
+      "title": "Commit 链条与有向无环图 (DAG) 拓扑演化",
+      "dependencies": ["node_2"],
+      "core_concept": "理解指针移动与分支的本质。用 Python 仿真构建包含 parent 指针的 Commit 节点，并在内存中还原分支合并冲突的判定拓扑。"
     }
   ],
   "learning_path": {
-    "suggested_order": ["node-1", "node-2", "node-3"],
-    "estimated_time_minutes": 120,
-    "progression_logic": "三个节点紧密递进，不可跳步：Node 1 从「函数也是对象」这个最直观的概念出发，建立起闭包和简单装饰器的直觉认知，是零基础入门；Node 2 深入带参装饰器的三层嵌套模式和 functools.wraps，解决实际问题中参数传递和元信息丢失的痛点；Node 3 攻克装饰器堆叠顺序、底层原理（描述符协议）和框架实战，让学生真正理解 @property、Flask 路由这些「看起来像魔法」的机制。每节点都配有对比示例（学生喜欢的风格）和大量手写练习，理论与实践交替推进。"
+    "suggested_order": ["node_1", "node_2", "node_3"],
+    "estimated_time_minutes": 150,
+    "progression_logic": "从原子对象（Blob/SHA1）→ 目录结构（Tree）→ 历史拓扑（Commit DAG），层层递进，每一层都是下一层的物理基础。"
   }
 }

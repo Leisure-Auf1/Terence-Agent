@@ -91,9 +91,32 @@ STUDENT_PROFILES = {
             "逐步拆解的代码注释",
             "先看效果再解释原理",
         ],
-        "cognitive_limit": 3,  # 同时理解的新概念上限
-    }
+        "cognitive_limit": 3,
+    },
+    "visual_learner_hates_magic": {
+        "description": "底层逻辑控，极度讨厌黑魔法和机械记忆命令，必须看懂物理存储结构和DAG拓扑才安心",
+        "dislikes": [
+            "机械罗列 git 命令而不解释底层发生了什么",
+            "只说'执行这个命令就好'而不展示 .git/objects 里的字节变化",
+            "用'指针'这种模糊词汇而不画图或解释物理存储",
+            "不展示哈希计算过程直接给结论",
+        ],
+        "likes": [
+            "图解 .git/objects 目录结构和 SHA1 哈希链表",
+            "用 Python 手动仿真 Blob/Tree/Commit 的二进制格式",
+            "对比 Git 内部实现与手动仿真的一致性验证",
+            "先拆解底层格式再映射到上层命令",
+        ],
+        "cognitive_limit": 4,
+        # Git 领域概念 (用于提取)
+        "domain_concepts": [
+            "Blob", "Tree", "Commit", "SHA1", "哈希", "DAG", "有向无环图",
+            "zlib", "deflate", "delta", "packfile", "ref", "HEAD",
+            "索引", "暂存区", "parent指针", "拓扑", "快照",
+        ],
+    },
 }
+
 
 
 # ──────────────────────────────────────────────
