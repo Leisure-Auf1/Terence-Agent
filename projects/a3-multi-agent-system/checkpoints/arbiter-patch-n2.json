@@ -1,0 +1,43 @@
+{
+  "stage": "STAGE_4_ARBITER",
+  "trigger": "UserSimulationAgent — Node 2 Score 69/100 < 85",
+  "node": "node-2",
+  "verdict": "MELTDOWN — HOT-FIX REQUIRED",
+  "diagnosis": {
+    "root_causes": [
+      {
+        "id": "COGNITIVE_OVERLOAD_N2",
+        "severity": "CRITICAL",
+        "detail": "最密集节 12 个概念 (装饰器/functools/wraps/__call__/带参数装饰器/*args等)，远超认知上限3。",
+        "fix": "拆为 4-5 个小节: §2.1 回顾无参装饰器 → §2.2 三层嵌套结构(工厂比喻) → §2.3 functools.wraps 对比 → §2.4 实用案例(@retry/@cache_ttl) → §2.5 类装饰器 __call__。每节 ≤ 4 概念。"
+      },
+      {
+        "id": "MISSING_METAPHORS_N2",
+        "severity": "HIGH",
+        "detail": "Node 2 缺少 Node 1 风格的接地气比喻（套娃/工厂/身份证）",
+        "fix": "注入比喻: 三层嵌套=「套娃」, 外层函数=「工厂生产装饰器」, @wraps=「给wrapper办身份证」, 类装饰器=「可调用的工具包」"
+      },
+      {
+        "id": "EXTRACTOR_FALSE_POSITIVE_TIMELIB",
+        "severity": "LOW",
+        "detail": "time/time.sleep 是标准库，被分析器误报为「未教的常识」。练习题用 time 是合理假设。",
+        "fix": "分析器白名单: 标准库模块不计入知识断层。手动消解此误报。"
+      }
+    ]
+  },
+  "patch_instructions": {
+    "target_file": "outputs/node-2-tutorial.md",
+    "style": "MATCH_NODE_1_85_SCORE_STYLE",
+    "actions": [
+      {"action": "REORGANIZE", "detail": "拆为 §2.1~§2.5, 每节≤4概念"},
+      {"action": "INJECT_METAPHORS", "detail": "套娃(三层)/工厂(outer)/身份证(wraps)/工具包(类装饰器)"},
+      {"action": "ENSURE_CONTRAST", "detail": "每核心概念 ❌ vs ✅ 对比块"},
+      {"action": "FIRST_PERSON_CONVERSATIONAL", "detail": "全程口语化、第一人称、对话式语气"},
+      {"action": "WORD_COUNT", "constraint": "1000-1500 中文字 + 代码示例"}
+    ]
+  },
+  "extractor_patch": {
+    "target": "user_simulation.py: _analyze_mind_gap",
+    "fix": "time/time.sleep 加入标准库白名单，不算知识断层"
+  }
+}

@@ -1,29 +1,12 @@
-# Node 3: 装饰器堆叠、property 原理与框架实战
+# Node 3: 堆叠 · 描述符 · 框架实战
 
-> **难度**: 攻坚  |  **预计阅读**: 25 分钟  |  **前置**: Node 1 & Node 2（掌握无参/带参装饰器）
-
----
-
-## 1. 回顾 — 你现在站在哪里
-
-经过 Node 1 和 Node 2，你已经掌握了：
-
-| 能力 | 你会写 |
-|------|--------|
-| 无参装饰器 | `@timer` — 两层结构，接收函数返回 wrapper |
-| 带参装饰器 | `@retry(max_tries=3)` — 三层结构，参数→装饰器→wrapper |
-| functools.wraps | 保留 `__name__`, `__doc__` 等元信息 |
-| 高级模式 | 类装饰器（`__call__`）, 缓存（`cache_ttl`） |
-
-但光会写单个装饰器还不够——现实中你需要的是**多个装饰器协同工作**，以及理解那些「看起来像魔法」的内置装饰器（`@property`、`@classmethod`）到底是怎么运作的。
+> **难度**: 攻坚  |  **预计阅读**: 20 分钟  |  **前置**: Node 1 & Node 2
 
 ---
 
-## 2. 装饰器堆叠 — 洋葱模型 🧅
+## §3.1 装饰器堆叠 — 洋葱剥皮 🧅
 
-### 2.1 堆叠语法
-
-最让人困惑的事情来了：多个 `@` 叠在一起时，到底谁先执行？
+多个 `@` 叠在一起的时候，最让我困惑的就是——谁先执行？来看：
 
 ```python
 @A
@@ -31,24 +14,21 @@
 @C
 def foo():
     pass
-
 # 等价于: foo = A(B(C(foo)))
 ```
 
-> 💡 **关键洞察**: 多个装饰器堆叠时，**从下往上应用，从上往下执行**。就像穿衣服——先穿最贴身的 C，再穿 B，最后披上 A。出门时，别人先看到的是 A（最外层）。
+❌ **直觉误导**: 从上往下读，以为 A 先执行。
+✅ **真相**: **从下往上应用，从上往下执行**。就像穿衣服——先穿最贴身的 C，再套 B，最后披上 A。别人看到你时，先看到 A（最外层）。
 
-### 2.2 拆解执行顺序
-
-用一个具体例子来验证：
+我写一个具体例子验证：
 
 ```python
 def make_decorator(name):
-    """工厂函数：生产一个带名字的装饰器"""
     def decorator(func):
         def wrapper(*args, **kwargs):
-            print(f"{name} 开始")          # ① 进场
-            result = func(*args, **kwargs)  # ② 调用内层
-            print(f"{name} 结束")          # ③ 退场
+            print(f"{name} 进入")             # ① 进场
+            result = func(*args, **kwargs)    # ② 调用内层
+            print(f"{name} 退出")             # ③ 退场
             return result
         return wrapper
     return decorator
@@ -61,367 +41,224 @@ C = make_decorator("C")
 @B
 @C
 def test():
-    print("--- 执行原始函数 ---")
+    print("--- 核心执行 ---")
 
 test()
-# 输出:
-# A 开始           ← 最外层先入
-# B 开始           ← 往里走
-# C 开始           ← 最内层最后进入
-# --- 执行原始函数 ---   ← 真正的函数在这里
-# C 结束           ← 最内层先出
-# B 结束           ← 往外走
-# A 结束           ← 最外层最后出
+# A 进入           ← 最外层先触发
+# B 进入           ← 往里走
+# C 进入           ← 最内层最后进入
+# --- 核心执行 ---  ← 真正的函数
+# C 退出           ← 最内层先退出
+# B 退出           ← 往外走
+# A 退出           ← 最外层最后退出
 ```
 
-### 2.3 可视化：洋葱模型
+> 🧅 **洋葱剥皮**: 剥的时候从外到内（A→B→C），咬到核心，咀嚼完从内到外吐出来（C→B→A）。wrapper 套 wrapper，每一层都在进出时做自己的事情。
 
-```
-         ┌─────────────────────────────┐
-         │         A 的 wrapper         │  ← 最外层，最先「接客」
-         │  ┌───────────────────────┐  │
-         │  │     B 的 wrapper       │  │
-         │  │  ┌─────────────────┐  │  │
-         │  │  │  C 的 wrapper   │  │  │  ← 最内层，最靠近原始函数
-         │  │  │                 │  │  │
-         │  │  │   test() 原函数  │  │  │
-         │  │  │                 │  │  │
-         │  │  └─────────────────┘  │  │
-         │  └───────────────────────┘  │
-         └─────────────────────────────┘
-
-调用流程: A 开始 → B 开始 → C 开始 → test() → C 结束 → B 结束 → A 结束
-```
-
-> 🧅 **记忆技巧**: 洋葱！剥开时从外到内（A→B→C），咬到核心（原始函数），咀嚼完从内到外（C→B→A）。
-
-### 2.4 实战堆叠：timer + retry + cache
+❌ **常见翻车**: 把 `@timer` 放在 `@retry` 里面——timer 只测单词调用，不算重试时间。
+✅ **正确姿势**: `@timer` 在最外层 → 它包裹 `@retry` → timer 测量的就是"包含所有重试的总耗时"。
 
 ```python
-import time
-import functools
-
-# ===== 三个装饰器 =====
-
-def timer(func):
-    """计时装饰器"""
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        start = time.perf_counter()
-        result = func(*args, **kwargs)
-        elapsed = time.perf_counter() - start
-        print(f"[TIMER] {func.__name__} 耗时 {elapsed:.4f}s")
-        return result
-    return wrapper
-
-def retry(max_tries=3, delay=1):
-    """重试装饰器（带参）"""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            last_exc = None
-            for attempt in range(max_tries):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    last_exc = e
-                    if attempt < max_tries - 1:
-                        print(f"[RETRY] 第 {attempt+1} 次失败，{delay}s 后重试...")
-                        time.sleep(delay)
-            raise last_exc
-        return wrapper
-    return decorator
-
-# ===== 堆叠使用 =====
-
-@timer                       # ③ 最后应用：计时整个调用
-@retry(max_tries=3, delay=1) # ② 中间层：失败就重试
-def fetch_data(simulate_fail=False):
-    """模拟网络请求"""
-    if simulate_fail:
-        raise ConnectionError("网络超时")
-    time.sleep(0.1)           # 模拟网络延迟
+@timer                          # ③ 最外层：计时整个调用（含重试）
+@retry(max_tries=3, delay=1)    # ② 中间层：失败就重试
+def fetch_data():
+    time.sleep(0.1)
     return {"status": "ok"}
-
-# 执行流程:
-# 1. timer 开始计时
-# 2.   retry 开始管理重试
-# 3.     fetch_data 真正执行
-# 4.   如果异常，retry 捕获并重试
-# 5. timer 停止计时（包含所有重试时间）
-
-print(fetch_data(False))
-# [TIMER] fetch_data 耗时 0.1002s
-# {'status': 'ok'}
 ```
 
-> ⚠️ **陷阱**: 装饰器堆叠的顺序非常讲究！如果你把 `@timer` 放在 `@retry` 里面，timer 只会测量单次调用的时间（不包括重试），通常不是你想要的效果。
+**本节新概念 (3个)**: 堆叠语法/等价转换 · 下→上应用 + 上→下执行 · 洋葱剥皮模型
 
 ---
 
-## 3. @property 的底层原理 — 描述符协议
+## §3.2 描述符入门 — `__get__` 的本质
 
-### 3.1 你不是在调用函数，你是在访问属性
+描述符不是什么高深魔法——一个对象只要定义了 `__get__`，它就是描述符。Python 通过这套协议来"拦截"属性访问。
 
-```python
-class Circle:
-    def __init__(self, radius):
-        self._radius = radius
+❌ **不用描述符**: 每个属性手动写 getter/setter 调用，啰嗦。
+✅ **用描述符**: 属性访问自动触发 `__get__`，透明拦截。
 
-    @property
-    def area(self):
-        return 3.14159 * self._radius ** 2
-
-c = Circle(5)
-print(c.area)      # 78.53975 — 注意！没有括号 c.area 不是 c.area()
-# c.area = 100     # AttributeError — 只读！
-```
-
-`@property` 把一个方法变成了「属性」。你访问 `c.area` 时，Python 悄悄调用了 `area(self)`。这个魔法背后的机制叫做**描述符协议（Descriptor Protocol）**。
-
-### 3.2 描述符协议：三步规则
-
-Python 在访问对象的属性时，按以下优先级查找：
-
-```
-1. 数据描述符（有 __get__ + __set__）   ← @property 属于这种
-2. 实例的 __dict__                     ← 普通属性
-3. 非数据描述符（只有 __get__）          ← @classmethod / @staticmethod
-4. 类的 __dict__                       ← 类属性
-5. 如果还没找到 → __getattr__
-```
-
-一个对象只要定义了 `__get__` 方法，它就是**描述符**。我们来看一个最简描述符：
+先看最简描述符长什么样：
 
 ```python
 class UpperCase:
-    """将属性值自动转为大写"""
+    """把值自动转大写"""
     def __get__(self, instance, owner):
+        # instance: 哪个实例访问的（p）
+        # owner:    描述符所在的类（Person）
         return self._value.upper() if hasattr(self, '_value') else ''
 
     def __set__(self, instance, value):
         self._value = value
 
 class Person:
-    name = UpperCase()   # ← name 是一个描述符
+    name = UpperCase()    # ← name 是一个描述符对象
 
 p = Person()
-p.name = "alice"         # 触发 UpperCase.__set__(self=name_desc, instance=p, value='alice')
-print(p.name)            # 触发 UpperCase.__get__(self=name_desc, instance=p, owner=Person)
-# 输出: ALICE
+p.name = "alice"          # 触发 UpperCase.__set__
+print(p.name)             # 触发 UpperCase.__get__ → "ALICE"
 ```
 
-> 💡 **三个参数的含义**:
-> - `self`: 描述符实例本身（上例中的 `name` 这个 `UpperCase` 实例）
-> - `instance`: 拥有描述符的实例（上例中的 `p`），类访问时为 `None`
-> - `owner`: 描述符所在的类（上例中的 `Person`）
+Python 访问属性时按这条链查找——优先级从上到下：
 
-### 3.3 @property 就是用描述符实现的
+```
+① 数据描述符（有 __get__ + __set__/__delete__）  ← 最高优先级
+② 实例的 __dict__                               ← 普通实例属性
+③ 非数据描述符（只有 __get__）                    ← @classmethod 等
+④ 类的 __dict__                                 ← 类属性
+```
 
-Python 内置的 `property` 本质上是一个**数据描述符类**：
+❌ **把数据存描述符自身的 `_value`**: 多个实例共享同一个描述符对象，后写的会覆盖前面的——数据全串了。
+✅ **正确做法**: 数据存在 `instance.__dict__` 里，描述符只负责拦截和转换。
 
 ```python
-class property:
-    def __init__(self, fget=None, fset=None, fdel=None, doc=None):
-        self.fget = fget
-        self.fset = fset
-        self.fdel = fdel
-        self.__doc__ = doc
+class UpperCase:
+    def __init__(self, attr_name):
+        self.attr_name = attr_name         # 存属性名，不存值
 
     def __get__(self, instance, owner):
         if instance is None:
-            return self           # 类访问 → 返回 property 本身
-        return self.fget(instance)  # 实例访问 → 调用 getter
+            return self
+        return instance.__dict__.get(self.attr_name, '').upper()
 
     def __set__(self, instance, value):
-        if self.fset is None:
-            raise AttributeError("can't set attribute")
-        self.fset(instance, value)
-
-    def __delete__(self, instance):
-        if self.fdel is None:
-            raise AttributeError("can't delete attribute")
-        self.fdel(instance)
-
-    def setter(self, fset):
-        return type(self)(self.fget, fset, self.fdel, self.__doc__)
-
-    def deleter(self, fdel):
-        return type(self)(self.fget, self.fset, fdel, self.__doc__)
+        instance.__dict__[self.attr_name] = value  # 存到实例上
 ```
 
-现在你一眼就能看懂 `@property` 的语法糖背后发生了什么：
+**本节新概念 (3个)**: 描述符协议(__get__) · 数据描述符 vs 非数据描述符 · 属性查找优先级链
 
-```python
-class Temperature:
-    @property                    # ① celsius = property(celsius)
-    def celsius(self):
-        return self._celsius
+---
 
-    @celsius.setter              # ② celsius = property(celsius_getter).setter(celsius_setter)
-    def celsius(self, value):    #    → 返回一个新的 property 实例，既带 getter 又有 setter
-        if value < -273.15:
-            raise ValueError("温度不能低于绝对零度！")
-        self._celsius = value
-```
+## §3.3 手写 @property — 自动门 🚪
 
-### 3.4 自己实现 custom_property
+你走进商场，门自动感应打开——你没推门，但它开了。`@property` 就是这个感觉：你写 `c.area`，看起来像读属性，实际上 Python 替你调了 `area()` 方法。
 
-理解了原理之后，自己写一个 `custom_property` 就很简单了：
+❌ **手动 getter**: `c.get_area()` — 每次都要写括号，一看就是"函数调用"。
+✅ **@property**: `c.area` — 像普通属性一样自然，但其实背后跑了逻辑。
+
+Python 内置的 `property` 就是数据描述符。我自己实现一个简化版：
 
 ```python
 class custom_property:
-    """自己实现的简化版 @property"""
+    """简化版 @property——自动门"""
     def __init__(self, fget=None, fset=None):
-        self.fget = fget
-        self.fset = fset
+        self.fget = fget          # 读的时候调这个
+        self.fset = fset          # 写的时候调这个
 
     def __get__(self, instance, owner):
-        if instance is None:
-            return self                    # 类访问 → 返回描述符本身
+        if instance is None:             # 类访问 → 返回描述符本身
+            return self
         if self.fget is None:
-            raise AttributeError("unreadable attribute")
-        return self.fget(instance)         # 实例访问 → 调用 getter
+            raise AttributeError("不可读")
+        return self.fget(instance)       # 实例访问 → 推自动门
 
     def __set__(self, instance, value):
         if self.fset is None:
-            raise AttributeError("can't set attribute")
-        self.fset(instance, value)         # 调用 setter
+            raise AttributeError("只读属性，不可设置")
+        self.fset(instance, value)
 
     def setter(self, func):
         """返回一个新的 custom_property，带上 setter"""
-        return type(self)(self.fget, func)  # 复制 fget，添加 fset
+        return type(self)(self.fget, func)   # 不可变——新建，不改旧
+```
 
+用起来跟内置 `@property` 一模一样：
 
-# ===== 使用 =====
+```python
 class User:
     def __init__(self, name):
         self._name = name
 
     @custom_property
-    def name(self):
+    def name(self):                    # ① name = custom_property(name_getter)
         return self._name
 
-    @name.setter
-    def name(self, value):
+    @name.setter                       # ② name = custom_property(getter, setter)
+    def name(self, value):             #    返回新实例，fget 和 fset 都配齐了
         if not value.strip():
             raise ValueError("名字不能为空")
         self._name = value.strip()
 
 u = User("Alice")
-print(u.name)     # Alice
-u.name = "Bob"
-print(u.name)     # Bob
-# u.name = ""     # ValueError: 名字不能为空
+print(u.name)    # Alice — 像属性一样自然
+u.name = "Bob"   # 触发校验
+# u.name = ""    # ValueError: 名字不能为空
 ```
 
-> 🎯 **关键**: `setter` 方法没有修改当前的 `custom_property` 实例——它创建了一个**新的**实例，包含原 getter 加上新 setter。这是不可变设计模式，避免修改正在使用的描述符导致奇怪的 bug。
+> 🚪 **自动门**: `c.area` 是走过去的动作（属性访问），门感应到你自动打开（`__get__` 调 fget），你不用伸手推（不用写括号）。`setter` 返回全新实例——老的门不拆，新门装上去。这是不可变设计，避免改了正在用的描述符出诡异 bug。
+
+**本节新概念 (3个)**: property 是数据描述符 · __get__/__set__ 协作实现自动门 · setter 不可变返回新实例
 
 ---
 
-## 4. @classmethod 与 @staticmethod 的原理
+## §3.4 Flask 路由 — 门牌号 📍
 
-### 4.1 它们也是描述符
+前面学的装饰器都是「包装模式」——wrapper 裹住原函数加行为。Flask 的 `@app.route("/hello")` 不走这条路——它是**注册模式**：装饰器只把函数记录到路由表，原函数纹丝不动。
 
-`@classmethod` 和 `@staticmethod` 不是黑魔法——它们也是描述符：
+❌ **包装模式**: wrapper 替换原函数，调用 wrapper 就是调用装饰过的版本。
+✅ **注册模式**: 装饰器回头就走，函数还是那个函数——只是地址被登记到了路由表。
 
-```python
-# @classmethod 的简化实现
-class classmethod:
-    def __init__(self, func):
-        self.func = func
-
-    def __get__(self, instance, owner):
-        # 无论 instance 是什么，都绑定到 owner 类上
-        def bound_method(*args, **kwargs):
-            return self.func(owner, *args, **kwargs)
-        return bound_method
-
-# @staticmethod 的简化实现
-class staticmethod:
-    def __init__(self, func):
-        self.func = func
-
-    def __get__(self, instance, owner):
-        # 什么都不绑定，直接返回原函数
-        return self.func
-```
-
-> 💡 **总结**: `classmethod` 的 `__get__` 返回一个闭包，把类作为第一个参数传入；`staticmethod` 的 `__get__` 直接返回原函数，什么都不绑。
-
-### 4.2 三者对比
-
-| 装饰器 | 第一个参数 | 描述符类型 | 可以访问实例属性？ |
-|--------|-----------|-----------|-----------------|
-| 普通方法 | `self`（实例） | 函数描述符 | ✅ |
-| `@classmethod` | `cls`（类） | 非数据描述符 | ❌ 只能访问类属性 |
-| `@staticmethod` | 无特殊参数 | 非数据描述符 | ❌ 不绑任何东西 |
-| `@property` | `self`（实例） | 数据描述符 | ✅ 但不能直接调用 |
-
----
-
-## 5. 装饰器在框架中的实战应用
-
-### 5.1 Flask 路由 — 最优雅的装饰器用法
-
-Flask 的 `@app.route('/path')` 是装饰器在 Web 框架中的经典应用：
+我把 Flask 路由的核心理念浓缩成一个 20 行的 MiniFlask：
 
 ```python
-# Flask 路由装饰器的简化实现
 class MiniFlask:
     def __init__(self):
-        self._routes = {}          # 路由表: {path: handler_func}
+        self._routes = {}               # 路由表: {门牌号: 函数}
 
     def route(self, path):
-        """路由注册装饰器"""
+        """路由注册——给函数家门口钉门牌号"""
         def decorator(func):
-            self._routes[path] = func   # ① 注册函数到路由表
-            return func                 # ② 返回原函数，不做任何包装
+            self._routes[path] = func   # ① 登记: "/hello" → hello 函数
+            return func                 # ② 不包装！原样返回
         return decorator
 
-    def handle_request(self, path):
-        """模拟处理 HTTP 请求"""
+    def handle(self, path):
+        """有人敲门牌号——找到对应函数执行"""
         handler = self._routes.get(path)
         if handler:
             return handler()
-        return "404 Not Found"
-
+        return "404 — 这个门牌号不存在"
 
 app = MiniFlask()
 
-@app.route("/hello")
+@app.route("/hello")           # ← 给 hello 家门口钉门牌号 "/hello"
 def hello():
-    return "Hello, World!"
+    return "你好，世界！"
 
 @app.route("/about")
 def about():
-    return "About Us"
+    return "关于我们"
 
-print(app.handle_request("/hello"))   # Hello, World!
-print(app.handle_request("/about"))   # About Us
-print(app.handle_request("/404"))     # 404 Not Found
+print(app.handle("/hello"))    # 你好，世界！
+print(app.handle("/about"))    # 关于我们
+print(app.handle("/secret"))   # 404 — 这个门牌号不存在
 ```
 
-> 💡 **注意**: `@app.route` 的装饰器**没有包装**原函数，它只是把函数注册到了路由表中，然后原封不动返回。这是装饰器的另一种用法———**注册模式**，而不是包装模式。
+> 📍 **门牌号**: 每个 `@app.route("/xxx")` 就是给函数家门口钉一块门牌。请求来了，框架敲对应的门牌号，函数出来应答。装饰器在这里不是"给函数穿衣服"，而是"给函数分配地址"。
 
-### 5.2 权限校验装饰器
+❌ **误以为装饰器一定要包装**: 如果你以为装饰器必须 `return wrapper`，看到 Flask 的 `return func` 就会懵。
+✅ **装饰器 = 函数加工厂**: 加工方式不限于"包裹"——注册、标记、收集……都是合法操作。
 
-Web 开发中，权限校验用装饰器最自然不过：
+**本节新概念 (3个)**: 注册模式 vs 包装模式 · 路由表(门牌号→函数) · 装饰器不包装只登记
+
+---
+
+## §3.5 权限装饰器 — 前置拦截 🛡️
+
+Web 开发里，权限校验是最自然的装饰器场景——在函数执行前设一道关卡，不符合条件就直接挡回去。
 
 ```python
 import functools
 
-# 模拟当前用户信息
 current_user = {"name": "Alice", "role": "editor"}
 
 def require_role(role):
-    """要求用户具备特定角色"""
+    """只有特定角色才能进门"""
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            if current_user.get("role") != role:
-                raise PermissionError(f"需要 {role} 权限，当前用户角色: {current_user.get('role')}")
-            return func(*args, **kwargs)
+            if current_user.get("role") != role:       # ① 前置检查
+                raise PermissionError(f"需要 {role} 权限！")
+            return func(*args, **kwargs)               # ② 放行
         return wrapper
     return decorator
 
@@ -433,134 +270,40 @@ def delete_all_users():
 def edit_article(article_id):
     return f"文章 {article_id} 编辑完成"
 
-# delete_all_users()   # PermissionError: 需要 admin 权限
-print(edit_article(42))  # 文章 42 编辑完成
+# delete_all_users()   # ❌ PermissionError — Alice 是 editor 不是 admin
+print(edit_article(42))  # ✅ 文章 42 编辑完成
 ```
 
-### 5.3 事务装饰器
+❌ **手动在每个函数里写权限检查**: `if role != "admin": raise...` 散落各处，改角色名要全局搜索替换。
+✅ **用装饰器守卫**: 一行 `@require_role("admin")` 挂上去，守卫逻辑集中管理——改一处生效全局。
 
-数据库操作中，`@transactional` 装饰器可以自动管理事务：
+更进一步——多个权限装饰器可以堆叠（回到 §3.1 的洋葱！）：
 
 ```python
-import functools
-
-class Database:
-    """模拟数据库"""
-    def __init__(self):
-        self._committed = False
-        self._rolled_back = False
-
-    def begin(self):
-        print("[DB] 事务开始")
-
-    def commit(self):
-        self._committed = True
-        print("[DB] 事务已提交")
-
-    def rollback(self):
-        self._rolled_back = True
-        print("[DB] 事务已回滚")
-
-
-db = Database()
-
-def transactional(func):
-    """事务装饰器 — 自动 begin/commit/rollback"""
+def log_access(func):
+    """记录每次访问"""
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        db.begin()                    # ① 开启事务
-        try:
-            result = func(*args, **kwargs)
-            db.commit()               # ② 成功 → 提交
-            return result
-        except Exception:
-            db.rollback()             # ③ 失败 → 回滚
-            raise                     # ④ 重新抛出异常
+        print(f"[AUDIT] {current_user['name']} 调用 {func.__name__}")
+        return func(*args, **kwargs)
     return wrapper
 
-
-@transactional
-def transfer_money(from_user, to_user, amount):
-    if amount <= 0:
-        raise ValueError("转账金额必须大于 0")
-    print(f"转账 {amount} 元: {from_user} → {to_user}")
-    return "success"
-
-print(transfer_money("Alice", "Bob", 100))
-# [DB] 事务开始
-# 转账 100 元: Alice → Bob
-# [DB] 事务已提交
-# success
+@log_access                    # ② 外层: 记录日志
+@require_role("admin")         # ① 内层: 先查权限，不通过日志也不记
+def delete_all_users():
+    return "所有用户已删除！"
 ```
 
-### 5.4 输入校验 + 类型转换装饰器
+洋葱堆叠的意义此刻完全体现：**内层守卫拦截 → 外层日志才能记录合法访问**。顺序反过来，非法请求也会被记下来——审计日志就脏了。
 
-```python
-def validate_types(**type_map):
-    """运行时类型校验装饰器"""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            # 校验位置参数
-            params = list(func.__code__.co_varnames[:func.__code__.co_argcount])
-            for i, (param_name, value) in enumerate(zip(params, args)):
-                expected_type = type_map.get(param_name)
-                if expected_type and not isinstance(value, expected_type):
-                    raise TypeError(f"{param_name} 期望 {expected_type.__name__}, 实际 {type(value).__name__}")
-            # 校验关键字参数
-            for name, value in kwargs.items():
-                expected_type = type_map.get(name)
-                if expected_type and not isinstance(value, expected_type):
-                    raise TypeError(f"{name} 期望 {expected_type.__name__}, 实际 {type(value).__name__}")
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
-
-
-@validate_types(a=int, b=int)
-def add(a, b):
-    return a + b
-
-print(add(1, 2))      # 3
-# print(add(1, "2"))  # TypeError: b 期望 int, 实际 str
-```
+**本节新概念 (3个)**: 前置拦截模式 · 权限校验闭包 · 守卫+日志洋葱堆叠
 
 ---
 
-## 6. 总结 — 装饰器能力的三个层次
+## 速查卡
 
-```
-┌──────────────────────────────────────────────────┐
-│              装饰器能力金字塔                        │
-├──────────────────────────────────────────────────┤
-│                                                  │
-│  L3: 设计模式                                     │
-│      ├── 路由注册 (Flask @app.route)              │
-│      ├── 权限校验 (@require_role)                 │
-│      ├── 事务管理 (@transactional)                │
-│      └── 类型检查 (@validate_types)              │
-│                                                  │
-│  L2: 底层原理                                     │
-│      ├── 描述符协议 (__get__ / __set__)           │
-│      ├── @property 实现                           │
-│      └── @classmethod / @staticmethod            │
-│                                                  │
-│  L1: 基础应用 (Node 1 + Node 2)                   │
-│      ├── 无参装饰器 (@timer, @logger)             │
-│      ├── 带参装饰器 (@retry(n), @cache_ttl(s))    │
-│      └── 堆叠组合                                  │
-│                                                  │
-└──────────────────────────────────────────────────┘
-```
-
-### 🎯 核心要点
-
-1. **堆叠顺序**: `@A @B @C` = `A(B(C(f)))` — 从下往上应用，从上往下执行
-2. **洋葱模型**: 调用时从外到内，返回时从内到外 — 就像剥洋葱
-3. **描述符协议**: `@property` 不是魔法，是 `__get__` 和 `__set__` 的优雅封装
-4. **注册模式**: 装饰器不一定要包装函数——Flask 路由只是注册，原函数不变
-5. **实战应用**: 路由 → 权限 → 事务 → 校验，装饰器无处不在
-
----
-
-> 📝 **Node 3 练习指向**: 接下来你将手写 `custom_property`（实现描述符协议）和装饰器堆叠实验（验证洋葱模型）。这两道题是本课程最难的核心关卡，攻克后你就真正「看懂了」所有装饰器。
+| 来源 | 核心概念（一句话） |
+|------|-------------------|
+| **Node 1** | 函数是对象→闭包(隐形背包)→装饰器=穿衣服→@语法糖→三层套娃工厂→@wraps 身份证 |
+| **Node 2** | 带参装饰器=工厂→装饰器→wrapper 三层；类装饰器用 `__init__`+`__call__` 管状态；`@retry`/`@cache_ttl` 模板复用 |
+| **Node 3（本章）** | 堆叠=洋葱剥皮(下→上应用,上→下执行)；描述符=属性拦截器；@property=自动门；Flask 路由=门牌号(注册模式)；权限装饰器=前置守卫 |
