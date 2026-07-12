@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -134,6 +134,68 @@ class FailurePatternLesson:
         return (
             f"[{self.source.upper()}] Error: {self.error_type}. "
             f"Context: {self.problem_context}. Rule: {self.abstract_lint_rule}"
+        )
+
+
+@dataclass
+class FeedbackRecord:
+    """反馈闭环记录 — 串联 UserSim → MetaReflector → Prompt 优化"""
+    record_id: str
+    node_id: str = ""
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    # 来源: UserSimulation
+    sim_score: int = 0                               # UserSim 评分 (0-100)
+    would_drop_out: bool = False                      # 是否会弃课
+    revision_required: bool = False                   # 是否需要修改
+    top_issues: List[str] = field(default_factory=list)  # top 问题列表
+
+    # 来源: MetaReflector
+    recalled_lessons: List[Dict[str, Any]] = field(default_factory=list)  # 召回教训
+    prompt_refinement: str = ""                       # 优化后的 Prompt 片段
+    refinement_rationale: str = ""                    # 优化理由
+
+    # 元数据
+    cycle_number: int = 0                             # 第几轮反馈循环
+    effect_delta: Optional[int] = None                # 优化后评分变化
+    status: str = "PENDING"                           # PENDING | OPTIMIZED | APPLIED
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "record_id": self.record_id,
+            "node_id": self.node_id,
+            "timestamp": self.timestamp,
+            "sim_score": self.sim_score,
+            "would_drop_out": self.would_drop_out,
+            "revision_required": self.revision_required,
+            "top_issues": self.top_issues,
+            "recalled_lessons": self.recalled_lessons,
+            "prompt_refinement": self.prompt_refinement,
+            "refinement_rationale": self.refinement_rationale,
+            "cycle_number": self.cycle_number,
+            "effect_delta": self.effect_delta,
+            "status": self.status,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "FeedbackRecord":
+        return cls(
+            record_id=data["record_id"],
+            node_id=data.get("node_id", ""),
+            timestamp=data.get("timestamp", ""),
+            sim_score=data.get("sim_score", 0),
+            would_drop_out=data.get("would_drop_out", False),
+            revision_required=data.get("revision_required", False),
+            top_issues=data.get("top_issues", []),
+            recalled_lessons=data.get("recalled_lessons", []),
+            prompt_refinement=data.get("prompt_refinement", ""),
+            refinement_rationale=data.get("refinement_rationale", ""),
+            cycle_number=data.get("cycle_number", 0),
+            effect_delta=data.get("effect_delta"),
+            status=data.get("status", "PENDING"),
         )
 
 
