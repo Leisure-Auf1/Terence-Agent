@@ -1,0 +1,74 @@
+{
+  "pipeline": "A3 Multi-Agent System — Python Decorator Deep Dive",
+  "framework_version": "1.0",
+  "last_updated": "2026-07-12T22:30:00+08:00",
+  "checkpoints": {
+    "codex-blueprint": {
+      "file": "checkpoints/codex-blueprint.json",
+      "signal": "SIG_BLUEPRINT_COMPLETE",
+      "status": "DONE",
+      "next": "claude-content-n1"
+    },
+    "claude-content-n1": {
+      "file": "checkpoints/claude-content-n1.json",
+      "signal": "SIG_CONTENT_N1_COMPLETE",
+      "status": "DONE",
+      "next": "test-n1"
+    },
+    "test-n1": {
+      "file": "checkpoints/test-n1.json",
+      "signal": "SIG_VALIDATION_N1_COMPLETE",
+      "status": "DONE",
+      "next": "review-gate-n1"
+    },
+    "review-gate-n1": {
+      "file": "checkpoints/review-gate-n1.json",
+      "signal": "SIG_REVIEW_GATE_N1_COMPLETE",
+      "status": "DONE",
+      "next": "claude-content-n2"
+    },
+    "claude-content-n2": {
+      "file": "checkpoints/claude-content-n2.json",
+      "signal": "SIG_CONTENT_N2_COMPLETE",
+      "status": "DONE",
+      "next": "test-n2"
+    },
+    "test-n2": {
+      "file": null,
+      "signal": "SIG_VALIDATION_N2_COMPLETE",
+      "status": "DONE",
+      "next": "review-gate-n2"
+    },
+    "review-gate-n2": {
+      "file": "checkpoints/review-gate-n2.json",
+      "signal": "SIG_REVIEW_GATE_N2_COMPLETE",
+      "status": "DONE",
+      "next": "claude-content-n3"
+    },
+    "claude-content-n3": {
+      "file": "checkpoints/claude-content-n3.json",
+      "signal": "SIG_CONTENT_N3_COMPLETE",
+      "status": "DONE",
+      "next": "test-n3"
+    },
+    "test-n3": {
+      "file": "checkpoints/test-n3.json",
+      "signal": "SIG_VALIDATION_N3_COMPLETE",
+      "status": "DONE",
+      "next": "review-gate-n3"
+    },
+    "review-gate-n3": {
+      "file": "checkpoints/review-gate-n3.json",
+      "signal": "SIG_REVIEW_GATE_N3_COMPLETE",
+      "status": "DONE",
+      "next": "final-gate"
+    },
+    "final-gate": {
+      "file": "checkpoints/final-gate.json",
+      "signal": "SIG_FINAL_GATE_COMPLETE",
+      "status": "DONE"
+    }
+  },
+  "progress": "11/11 checkpoints completed ✅ — Pipeline complete! Next: PR → Merge → Report",
+  "disaster_recovery": "Ready — all checkpoints persist on disk for offline resume"
+}

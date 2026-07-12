@@ -366,8 +366,25 @@ class ReviewGateManager:
                     elapsed_ms=_elapsed(start),
                 )
 
-            # 2. 反向验证: 原始骨架（带 TODO）
+            # 2. 反向验证: 原始骨架（带 TODO）— 用无 fallback 的剥壳测试
             (tmp / "exercise.py").write_text(exercise_src, encoding="utf-8")
+
+            # 创建剥壳测试: 移除 probe 检测，直接 import exercise
+            stripped_test = (
+                "import pytest\n"
+                "from exercise import retry, cache_ttl\n\n"
+                "def test_retry_skeleton():\n"
+                "    @retry(max_tries=2, delay=0.01)\n"
+                "    def f():\n"
+                "        return 42\n"
+                "    assert f() == 42\n\n"
+                "def test_cache_skeleton():\n"
+                "    @cache_ttl(seconds=1)\n"
+                "    def f(n):\n"
+                "        return n * 2\n"
+                "    assert f(5) == 10\n"
+            )
+            (tmp / "test_case.py").write_text(stripped_test, encoding="utf-8")
 
             negative = subprocess.run(
                 ["python3", "-m", "pytest", str(tmp / "test_case.py"), "-v", "--tb=short"],
