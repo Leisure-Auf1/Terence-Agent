@@ -80,13 +80,13 @@ related_skills: [error-registry, task-progress, browser-automation, computer-use
 原则: 所有知识进 Git，不进聊天记录
 依据: OpenAI Harness Engineering (2026) — "Give Codex a map,
        not a 1,000-page instruction manual."
+
 约束:
   1. 每个项目必须在 projects/ 下有独立目录
   2. 必须包含 README.md + 至少一个规范文档 (SPEC.md / DESIGN.md / USAGE.md)
   3. 所有架构决策写入 docs/decisions/*.md
-  4. **🆕 AGENTS.md 作为入口目录** — 约 100 行，指向结构化文档知识库
+  4. **🆕 AGENTS.md 作为入口目录** — 约 100 行，指向结构化文档知识库，遵循 Progressive Disclosure
   5. 禁止依赖聊天历史作为知识来源
-
 ```
 
 ### 0.3.4 PR 流程约束 (PR Workflow Gate)
@@ -96,18 +96,32 @@ related_skills: [error-registry, task-progress, browser-automation, computer-use
 依据: OpenAI (2026) — "Corrections are cheap, and waiting is expensive."
 
 约束:
-  1. **🆕 Terence-Agent 框架文件** (agent-team/ architecture-constraints/ error-registry/ scripts/ skills/) → **任何变更必须走 PR**，无论文件数量
-  2. 非框架项目文件 (>3文件) → 必须提 PR
-  3. PR 必须用 conventional commit 格式
-  4. PR 必须包含: Summary + Changes + Test Plan
-  5. PR 自审通过后才可合并
-  6. 合并必须用 squash (保持 main 历史干净)
+  1. 批量文件变更 (>3文件) → 必须提 PR
+  2. PR 必须用 conventional commit 格式
+  3. PR 必须包含: Summary + Changes + Test Plan
+  4. PR 自审通过后才可合并
+  5. 合并必须用 squash (保持 main 历史干净)
 
 禁止:
-  ❌ 框架文件直接修改后跳过 PR
-  ❌ 非框架批量文件变更直接 push 到 main
-  ❌ PR 没有自审就合并
-  ❌ PR 标题不含 type(scope)
+  **禁止**: 批量文件变更直接 push 到 main
+    ❌ PR 没有自审就合并
+    ❌ PR 标题不含 type(scope)
+
+  ### 0.3.6 第三方平台桥接约束 (Cross-Platform PR Bridge)
+
+  ```
+  原则: 当需要在 Gitee/GitLab 等非 GitHub 平台创建/管理 PR 时，
+        平台 API 差异可能导致自动化流程中断。
+
+  约束:
+    1. Gitee API PATCH/PUT 更新仓库时，body 必须包含 `name` 参数
+       例: PATCH /repos/{owner}/{repo} 需要 {"name": "repo-name", ...}
+    2. Gitee 创建仓库默认 private，需额外调用 PATCH 设 public
+    3. gh CLI 仅支持 GitHub，Gitee 用 curl + personal access token
+    4. Gitee token 在 URL 中传参: ?access_token=xxx，不在 header 传
+
+  参考: agent-team/claude-code-pr-workflow.md — Claude Code + 第三方 API 配置
+  ```
 ```
 
 ### 0.3.5 Agent 间协作约束 (Inter-Agent Communication)
@@ -225,6 +239,7 @@ Layer  ┌───────────────────────�
 | 纯开发/编码 (写代码/改bug) | L1 标准工具, L5 error-registry | L2, L3, L4 |
 | **🆕 实验报告 (OS/文档类)** | **os-lab-report-automation, docx-raw-xml, lab-report-execution, L5 error-registry** | L2 browser-automation, L4 computer-use-mcp |
 | 操作系统实验报告 | 实验报告相关技能 (ucampus 等) | L2-L4 全部自动化工具 |
+| **🆕 论文/报告写作** | **paper-report-writing, arxiv, L5 error-registry** | L2 browser-automation, L4 computer-use-mcp |
 
 **约束**: 加载禁止项 = `CTX_OVERLOAD` 错误，记入 error-registry。
 
@@ -298,6 +313,27 @@ computer-use-mcp (L4) 失败:
 - 只有 Feedforward 没有 Feedback → 无法自我纠错
 - 只有 Feedback 没有 Feedforward → 重复犯同样的错
 - Computational 优先于 Inferential（机械约束 > 提示词约束）
+
+---
+
+## 4.5 Feedforward/Feedback 体系 — Harness Engineering 分类
+
+> **参考**: Martin Fowler — "A coding agent has none of the tacit knowledge that human developers bring."
+>
+> Harness 机制分两轴：方向 (Feedforward → Feedback) × 类型 (Computational → Inferential)
+
+| 方向 | 类型 | 我们的实现 | 作用时机 |
+|:-----|:-----|:-----------|:---------|
+| **Feedforward (Guide)** 🧭 | Computational | `scripts/check-preflight.sh` | 项目开始前 |
+| **Feedforward (Guide)** 🧭 | Inferential | `AGENTS.md` + `architecture-constraints` | 上下文加载时 |
+| **Feedback (Sensor)** 📡 | Computational | `error-registry` + `event-report` 违反检测 | 项目完成后 |
+| **Feedback (Sensor)** 📡 | Inferential | Post-Task 复盘 (第0步事件报告检查) | 项目完成后 |
+
+**约束**:
+- Feedforward 和 Feedback 必须配对使用，缺一不可
+- 只有 Feedforward 没有 Feedback → 无法自我纠错
+- 只有 Feedback 没有 Feedforward → 重复犯同样的错
+- Computational 优先于 Inferential（机械约束 > 提示词约束）
 - **🆕 隐私审查优先** — 任何涉及用户个人信息的内容必须有隐私审查步骤
 
 ---
@@ -328,6 +364,25 @@ computer-use-mcp (L4) 失败:
 - 中间过程（日志、代码、skill）不得包含
 - 使用后立即清理
 
+### PII 全仓清洗命令（发现后立即执行）
+
+```bash
+# 扫描全仓
+grep -rn "真实姓名\|真实学号\|手机号\|身份证" .
+
+# 批量替换（适配常见模式）
+find . -type f \( -name "*.md" -o -name "*.py" -o -name "*.json" -o -name "*.yaml" \) \
+  | while read f; do
+      sed -i \
+        -e 's/真实姓名/[用户姓名]/g' \
+        -e 's/真实学号/[学号]/g' \
+        "$f"
+    done
+
+# 验证无遗留
+grep -rn "真实姓名\|真实学号" . && echo "⚠️ 仍有遗留" || echo "✅ 无遗留 PII"
+```
+
 ---
 
 ## 5. 技能调用约束
@@ -346,19 +401,7 @@ cd ~/Terence-Agent && bash scripts/check-preflight.sh
 **约束**:
 - ❌ 不能用"我检查过了"代替脚本执行
 - ❌ 不能跳过 preflight 直接开始工作
-- ❌ 不能依赖聊天记忆中的旧仓库状态 — **必须实时查看当前状态**
 - ✅ 脚本输出 = 当前仓库状态的唯一权威来源
-
-**🆕 跨会话仓库状态检查**:
-```bash
-# 每次新开始/跨会话工作前，必须执行：
-cd ~/Terence-Agent && \
-  git status && \
-  git log --oneline -5 && \
-  ls projects/
-
-# 确保不依赖旧对话中看到的旧状态
-```
 
 ### 5.2 提示词清单（作为脚本的补充说明）
 
@@ -370,6 +413,7 @@ pre-check:
   - "是否有进行中的任务?" → 查 task-progress
   - "仓库当前状态是什么?" → git status + 查看最近修改的文件（确保基于最新状态）
   - "当前可用技能和模板有哪些?" → skills_list + 查看 paper-writing/ agent-team/ 目录
+  - "preflight 检查是否已运行?" → 检查 .hermes/preflight-*.md SHA 指纹是否匹配当前 HEAD
 
 # 调用后必须执行
 post-check:
@@ -391,6 +435,10 @@ post-check:
 | 未更新 task-progress | 记入 error-registry `PROGRESS_MISSING` |
 | 🆕 实现项目前跳过 preflight 检查 | 记入 error-registry `PREFLIGHT_SKIPPED` |
 | 🆕 项目完成后未记录到 event-report | 记入 error-registry `EVENT_REPORT_MISSING` |
+| 🆕 有 Feedforward 无 Feedback (事后复盘) | 记入 error-registry `FEEDBACK_MISSING` |
+| 🆕 风险合同与实际变更路径不匹配 | 记入 error-registry `HARNESS_MISMATCH` |
+| 未执行 Post-Task Retrospective | 记入 error-registry `SKIP_RETROSPECTIVE` |
+| **🆕 仓库中出现真实用户个人信息** | 记入 error-registry `PII_LEAK` |
 | **🆕 批量文件变更未走 PR** | 记入 error-registry `SKIP_PR_GATE` |
 | **🆕 跳过机械检查直接审核** | 记入 error-registry `SKIP_MECHANICAL_CHECK` |
 | **🆕 大步骤间未做 context checkpoint** | 记入 error-registry `CTX_CHECKPOINT_MISSING` |
@@ -399,9 +447,12 @@ post-check:
 | **🆕 Agent 之间互调工具** | 记入 error-registry `CROSS_AGENT_TOOL_CALL` |
 | **🆕 完成关键步骤后未通知 Logger** | 记入 error-registry `LOGGER_MISSING` |
 
----
+# 演练 / 脚本 / 参考
 
-## 7. Post-Task 强制复盘 (Post-Task Retrospective)
+本技能含以下支持文件：
+- `references/pii-sanitization.md` — PII 全仓清洗操作参考（搜索→替换→验证→提交）
+
+---
 
 每个任务完成后**必须**执行以下复盘流程:
 

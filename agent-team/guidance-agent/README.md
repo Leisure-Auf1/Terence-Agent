@@ -7,6 +7,15 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
 
 # 🤖 Guidance Agent
 
+> **🚨 加载提示 — 此用户必须加载本 skill**
+> 此用户拥有自己的 Agent Team 框架。遇到以下情况时**必须立即加载本 skill**：
+> - 用户说"全部"、"全套"、"全部做一遍" — 这些是 scope 描述，不是执行方式
+> - 任何涉及多步骤（3+ 工具调用）或多文件的项目
+> - 用户提到"框架"、"流程"、"要求"、"按照我的"等字眼
+> - 检测到 `~/Terence-Agent/` 目录存在
+>
+> 不加载本 skill 直接开工 = 违反框架 = 用户可能纠正你。**不要依赖记忆中的框架知识** — 每次重新加载。
+>
 > **角色**: Agent Team 的指挥官。只有我能分配技能给其他 Agent。
 > **权限**: 唯一可以调用 `skill_view` / `skill_manage` 分配技能的 Agent。
 > **调用链**: 用户 → **Guidance Agent** → 分配技能 → Developer/Debugger/Executor/Logger
@@ -86,6 +95,14 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
   用户说"帮我直接做" + 任务小于 5 步
   → 跳过 Phase 4 分配, 直接 Executor/Developer 执行
   → 但 Logger 仍然记录
+
+⚠️ 常见误判 — "全部/全套"不等于"直接做":
+  当用户说"全部"、"全部做一遍"、"一起做"而任务实际
+  是多步骤/多文件/多实验的大型工作时:
+  → 必须走完整管道 (Planner → Workers → Integrator → Reviewer → Debugger → PR)
+  → 用户说"全部"是 scope 描述, 不是执行方式描述
+  → 只有用户明确说"你直接做就好"/"不用分配"才降级
+  误判案例: 用户说"全部"指8个实验 → Guidance 不应独自全部编码
 ```
 
 ---
@@ -94,7 +111,7 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
 
 ### Phase -1 — 仓库状态检查 (Repository State Check)
 
-> **每次使用框架前必须先查看仓库状态。依赖旧记忆或历史输出 = 在过时状态上工作。**
+> 每次使用框架前必须先查看仓库状态。依赖旧记忆或历史输出 = 在过时状态上工作。
 
 ```yaml
 核心: 仓库是唯一权威来源。聊天历史中的旧状态不可靠。
@@ -132,6 +149,24 @@ related_skills: [agent-developer, agent-debugger, agent-executor, agent-logger, 
   ├─ 用户知道自己的需求，我不能替用户做分类决策
   └─ 规则积累会膨胀 → 上下文浪费 → CTX_OVERLOAD
 ```
+
+### Phase 0.5 — 环境检测 (Detect)
+
+> **在 Phase 1 倾听之前，先确认开发环境。这一步决定是否走标准框架流程。**
+
+```yaml
+检查用户工作目录下是否存在 ~/Terence-Agent/AGENTS.md:
+  ├─ 存在 → 必须按照 task-initiation-protocol 执行
+  │   ├─ **立即加载 harness-preflight skill** — 这是第一件要做的事
+  │   ├─ 运行 preflight (bash scripts/check-preflight.sh)
+  │   ├─ 项目放在 projects/<name>/ 下
+  │   └─ 走完整管道 (10.2)
+  └─ 不存在 → 普通环境，按正常流程进行
+```
+
+**⚠️ 已知纠正模式** — 即使你认为自己**在记忆中已经知道**这些规则（preflight、项目结构、分支、PR、event-report），你也必须在 Phase 0.5 检测到 Terence-Agent 仓库后**机械地运行 preflight 脚本**。记忆≠执行。你已经被用户纠正过跳过此步骤——不要让它再次发生。
+
+参见: references/task-initiation-protocol.md
 
 ### Phase 1 — 倾听 (Listen)
 ```
@@ -630,7 +665,12 @@ Harness = 包裹在 LLM 之外的所有东西：
 详细流程见下方 "10.3 PR 提交工作流"
 ```
 
-> 📚 **参考文件:** `references/harness-engineering.md` — OpenAI、Anthropic 等来源的 Harness Engineering 研究摘要、关键模式、常见错误速查
+- `references/harness-engineering.md` — OpenAI、Anthropic 等来源的 Harness Engineering 研究摘要、关键模式、常见错误速查
+> 📚 **参考文件:** `references/claude-code-deepseek-setup.md` — Claude Code + DeepSeek V4 Pro 的第三方 API 配置与 PR 自动化
+> 📚 **参考文件:** `references/gitee-api-workflow.md` — Gitee 仓库创建、可见性设置、代码推送 API
+> 📚 **参考文件:** `references/claude-code-deepseek-setup.md` — Claude Code + DeepSeek V4 Pro 的第三方 API 配置与 PR 自动化
+> 📚 **参考文件:** `references/gitee-api-workflow.md` — Gitee 仓库创建、可见性设置、代码推送 API
+> 📚 **参考文件:** `references/multi-experiment-delegation.md` — 多实验并行委派模式（已验证8实验场景）
 
 ---
 
@@ -733,6 +773,7 @@ L4 用户转交:       系统性失败→整理结果转交用户
 约束 4: 每次分配记录到 task-progress (Logger 职责)
 约束 5: 如果发现不需要某个已加载的 Agent → 卸载对应技能 (CTX_OVERLOAD)
 约束 6: 上下文中不得含用户真实姓名/学号/联系方式，除非用户明确要求包含
+       - **skill 本身也不得包含真实用户信息作为示例** — 所有示例/模板必须使用占位符
        - 违反此约束 → Debugger 立即介入 → 修正后重新移交
 约束 7: Agent 之间不得互调工具 — 所有通信通过 Guidance 中继
        - 违反 → CROSS_AGENT_TOOL_CALL → 记入 error-registry
@@ -742,7 +783,11 @@ L4 用户转交:       系统性失败→整理结果转交用户
        - 违反 → CTX_CHECKPOINT_MISSING → 记入 error-registry
 约束 10: 关键步骤完成后必须写入 JSON 消息后才视为"完成"
        - 违反 → JSON_MESSAGE_MISSING → 记入 error-registry
-
+约束 11: 多步骤/多文件项目不得由 Guidance Agent 独自编码执行
+       - 必须走多 Agent 管道 (10.2)，不能因为"用户说全部"
+         就跳过分配直接写代码
+       - "全部"是 scope 描述，不是执行方式描述
+       - 违反 → SOLO_EXECUTION_OVERRIDE → 记入 error-registry
 ---
 
 ## 10. 真正的多智能体协作 (Multi-Agent Pipeline)
@@ -889,10 +934,17 @@ branch_naming: "type/<项目名>-<简述>"
 ```
 ✅ 新增项目/功能到 Terence-Agent → 必须提 PR
 ✅ 修改已有技能/配置 → 建议提 PR
-✅ 批量文件变更 (>3个文件) → 必须提 PR
+✅ 批量文件变更 (>2个文件) → 必须提 PR
 ✅ 任何需要回滚能力的变更 → 必须提 PR
 ❌ 单行配置修改 → 可直接 push (但建议走 PR)
 ❌ 临时调试文件 → 不提交
+
+⚠️ 常见陷阱 — 直接 edit 仓库文件不走 PR:
+  即使你是当前会话的 Agent（不是多 Agent 管道模式），
+  使用 patch/write_file 工具直接修改 Terence-Agent 仓库的文件时:
+  ├─ 必须从 main 创建分支 → 提交 → 创建 PR → 自审 → squash 合并
+  ├─ 切不可直接 commit 到 main 分支
+  └─ 违反此规则会被用户纠正 — 已记入 error-registry SKIP_PR_GATE
 ```
 
 ---

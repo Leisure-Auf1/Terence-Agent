@@ -28,6 +28,57 @@ related_skills: [guidance-agent, agent-debugger, agent-logger]
 | (无特殊技能) | 直接用 terminal/read_file/write_file | 始终可用 |
 | `github-pr-workflow` | PR 提交/合并/CI 检查 | 需要提交代码时 |
 
+## Claude Code 集成（编码加速器）
+
+当需要大规模编码或批量 PR 时，Developer Agent 可以加载 Claude Code CLI 作为执行引擎。
+
+### 配置（DeepSeek V4 兼容接口，无需 Anthropic 官方 API）
+
+```bash
+export ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic
+export ANTHROPIC_AUTH_TOKEN="$DEEPSEEK_API_KEY"
+export ANTHROPIC_MODEL=deepseek-v4-pro
+export ANTHROPIC_DEFAULT_OPUS_MODEL=deepseek-v4-pro
+export ANTHROPIC_DEFAULT_SONNET_MODEL=deepseek-v4-pro
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=deepseek-v4-flash
+export CLAUDE_CODE_SUBAGENT_MODEL=deepseek-v4-flash
+export CLAUDE_CODE_EFFORT_LEVEL=max
+```
+
+持久化到 `~/.zshrc` 后自动生效。
+
+### Print 模式（自动化任务首选）
+
+```bash
+claude -p "任务描述" \
+  --dangerously-skip-permissions \
+  --allowedTools "Read,Edit,Bash" \
+  --max-turns 20 \
+  --output-format text
+```
+
+### 完整 PR 提交流程（一步到位）
+
+```bash
+claude -p "
+执行以下步骤，不要问我问题，直接执行:
+1. git status 查看当前状态
+2. git add 所有相关改动
+3. git commit -m 'feat(scope): 描述'
+4. git push -u origin HEAD
+5. gh pr create ... --base main
+6. gh pr merge --squash --delete-branch
+7. git checkout main && git pull
+" --dangerously-skip-permissions --allowedTools "Read,Edit,Bash" --max-turns 30
+```
+
+### 局限
+
+- Claude Code 本地需要先安装（`npm install -g @anthropic-ai/claude-code`）
+- Print 模式跳过所有交互对话框，适合自动化
+- 交互式调试需要用 tmux 容器
+- 子 Agent 模式（delegate_task + claude）可用于并行编码任务
+
 ## 不可加载
 
 | 技能 | 原因 |

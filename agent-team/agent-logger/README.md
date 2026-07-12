@@ -2,7 +2,7 @@
 name: agent-logger
 description: '📝 Logger Agent — 负责全流程日志记录。初始化/更新 task-progress，记录每步执行结果，执行 Post-Task 复盘'
 tags: [agent, logger, tracking, progress]
-related_skills: [guidance-agent, agent-developer, agent-debugger, agent-executor, task-progress, error-registry]
+related_skills: [guidance-agent, agent-developer, agent-debugger, agent-executor, task-progress, error-registry, event-report, architecture-constraints]
 ---
 
 # 📝 Logger Agent
@@ -12,16 +12,38 @@ related_skills: [guidance-agent, agent-developer, agent-debugger, agent-executor
 
 ## 职责
 
+### Pre-Task（项目开始前）
+
+```
+0. 运行 preflight 检查脚本 → bash scripts/check-preflight.sh
+   产出: .hermes/preflight-YYYY-MM-DD.md
+   自动化: 每次新项目/新任务开始前自动触发
+   → 未运行 = PREFLIGHT_SKIPPED ❌
+   脚本功能:
+     ├─ [1/5] Git 仓库状态 — 分支 + 工作区 + 最近提交
+     ├─ [2/5] 今日事件报告 — 今日已有哪些操作
+     ├─ [3/5] 报错表已知问题 — L0~L2 错误 + L3 错误码
+     ├─ [4/5] 可用技能与模板 — paper-writing/ + agent-team/ + projects/
+     └─ [5/5] 架构约束索引 — 关键章节
+```
+
+### Task（执行中）
+
 ```
 1. Guidance Agent 分配任务后 → 初始化 task-progress
 2. Developer 每完成一步 → 更新 progress
 3. Executor 每执行一步 → 更新 progress + 记录产出物
 4. Debugger 修复错误 → 更新 error-registry + progress
-5. 🆕 Developer 提交 PR → 记录 PR 号 + 状态
-6. 🆕 CI 结果 → 记录 CI 状态 (pending/success/failure)
-7. 全部完成后 → 执行 Post-Task 复盘 (8步)
-8. 复盘结果 → 更新 progress "复盘完成"
-9. 🆕 每步操作 → 写入 event-report/YYYY-MM-DD.md 每日事件报告（与 error-registry 分开）
+5. Developer 提交 PR → 记录 PR 号 + 状态
+6. CI 结果 → 记录 CI 状态 (pending/success/failure)
+7. 每步操作 → 写入 event-report/YYYY-MM-DD.md 每日事件报告
+```
+
+### Post-Task（完成后）
+
+```
+8. 执行 Post-Task 复盘
+9. 复盘结果 → 更新 progress "复盘完成"
 ```
 
 
@@ -76,6 +98,7 @@ for s, c in sorted(counts.items()):
 | 技能 | 用途 | 加载条件 |
 |:-----|:-----|:---------|
 | `task-progress` | 进度追踪 | 始终加载 |
+| `event-report` | 每日事件报告 | 始终加载 — **强制**：每次操作后必须记录 |
 | `error-registry` (追加) | 记录新错误 | 收到 Debugger 通知时 |
 | `architecture-constraints` (只读) | 复盘时检查约束 | 复盘时 |
 
@@ -124,6 +147,9 @@ for s, c in sorted(counts.items()):
 ```
 
 Post-Task 复盘:
+  0. 📋 事件报告检查: "已记录到 event-report?"
+     → 未记录 → 立即写入 event-report/YYYY-MM-DD.md
+     → 已记录 → 确认
   1. 读日志: "有错吗?" → 记录
   2. 读产出: "符合预期?" → 记录差距
   3. 查重复: "这错犯过吗?" → 查 error-registry
@@ -131,8 +157,7 @@ Post-Task 复盘:
   5. PR 检查: "产出需要走 PR?" → 记录 PR 号 [PR]
   6. 学教训: "下次怎么避免?" → 更新修复方案
   7. 固化: "需要 skill?" → 创建/更新
-  8. 📋 事件报告: 写入 event-report/YYYY-MM-DD.md（每条操作一条记录，与 error-registry 分开）
-  9. 收尾: 标记完成
+  8. 收尾: 标记完成 + 记录复盘结果到 progress.md
 ```
 
 ## Git 同步 (可选)
@@ -158,4 +183,4 @@ bash ~/Terence-Agent/sync.sh "📝 复盘: <任务名>"
 | 脚本 | `~/Terence-Agent/sync.sh` |
 | Token | `~/.git-credentials` (已保存) |
 
-同步时机：复盘第 8 步"收尾"之后，日志完整可推时执行。
+同步时机：复盘第 9 步"收尾"之后，日志完整可推时执行。

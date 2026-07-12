@@ -3,7 +3,7 @@ name: task-progress
 description: '任务进度同步系统 — 每个复杂任务实时写入进度文件，支持跨会话恢复。新对话加载进度文件即可恢复上下文'
 category: devops
 tags: [core, progress, tracking]
-related_skills: [architecture-constraints, error-registry]
+related_skills: [architecture-constraints, error-registry, event-report]
 ---
 
 # 任务进度同步系统 (Task Progress Sync)
@@ -201,3 +201,52 @@ cat ~/.hermes/tasks/<task-id>/progress.md
 ## 配套: error-registry 联动
 
 遇到阻塞时 → 查 error-registry 找已知修复 → 尝试修复 → 更新进度文件的 `🚧 阻塞/错误` 和 `🧠 关键决策`
+
+---
+
+## 配套: 每日事件报告 (event-report)
+
+> event-report 是 task-progress 的**每日同伴**，两者互补不重复。
+
+| 维度 | task-progress | event-report |
+|:-----|:-------------|:-------------|
+| 粒度 | 单任务分步追踪 | 全天操作时间线 |
+| 范围 | 一个任务的生命周期 | 跨多个任务的操作 |
+| 焦点 | 步骤状态 (进行中/已完成) | 做了什么 + 结果 |
+| 错误 | 阻塞/错误表 | 指向 error-registry 错误码 |
+
+### 强制规则 (⚠️ 每次完成项目必须执行)
+
+```
+项目/操作完成后:
+  1. 更新 task-progress (标记完成、产出物)
+  2. 写入 event-report/YYYY-MM-DD.md (操作记录)
+     → 未写入 = EVENT_REPORT_MISSING ❌
+  3. 执行 Post-Task 复盘 (architecture-constraints 第7节)
+```
+
+三者联动流程：
+
+```
+完成项目
+  │
+  ├─✏️ task-progress: 标记步骤完成 + 记录产出物
+  ├─📋 event-report: 写入今日操作日志
+  │   └─ 有错误? → error-registry 追加错误码
+  └─🔄 Post-Task 复盘
+      └─ 第0步: "已记录到 event-report?"
+           → 未记录 → 立即写入
+```
+
+### 事件报告格式 (参考)
+
+```markdown
+### HH:MM — 操作类型图标
+
+**描述**: 具体做了什么
+**结果**: ✅ 成功 / ❌ 失败 / ⏳ 进行中 / 🔄 中止
+**产出**: 路径列表
+**关联**: error-registry 错误码（如有）
+```
+
+操作类型: 🛠️ 开发 | ⚡ 执行 | ⚙️ 配置 | 🔧 修复 | 📖 学习 | 📋 管理 | 🎨 设计 | 🔄 同步
