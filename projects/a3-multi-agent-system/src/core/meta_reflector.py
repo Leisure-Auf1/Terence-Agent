@@ -1,0 +1,135 @@
+"""
+Phase 4 — MetaReflectorAgent + 自适应 Prompt 构建器
+"""
+
+from __future__ import annotations
+import json, os, re, urllib.request, ssl
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+from .contracts import FailurePatternLesson, BUILTIN_LESSONS
+
+
+class _LocalMemoryStore:
+    def __init__(self, db_path=None):
+        self.db_path = Path(db_path or os.path.expanduser("~/.hermes/a3_memory.json"))
+        self._data: List[Dict[str, Any]] = []
+        self._load()
+        if not self._data: self._seed()
+
+    def _load(self):
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        if self.db_path.exists(): self._data = json.loads(self.db_path.read_text())
+        else: self._data = []
+
+    def _save(self):
+        self.db_path.write_text(json.dumps(self._data, ensure_ascii=False, indent=2))
+
+    def _seed(self):
+        for l in BUILTIN_LESSONS:
+            self._data.append({"id": f"lesson_{l.node_id}_{l.error_type.lower().replace(' ','_')}", "document": l.semantic_anchor(), "metadata": {"doc_type": "failure_lessons", "node_id": l.node_id, "error_type": l.error_type, "structured_data": l.to_json()}})
+        self._save()
+
+    def upsert(self, documents, metadatas, ids):
+        for i, did in enumerate(ids):
+            self._data = [d for d in self._data if d["id"] != did]
+            self._data.append({"id": did, "document": documents[i], "metadata": metadatas[i]})
+        self._save()
+
+    def query(self, query_texts, n_results=2, where=None):
+        results = [[], [], []]
+        for qt in query_texts:
+            qt_l = qt.lower()
+            scored = []
+            for item in self._data:
+                if where and not all(item.get("metadata", {}).get(k) == v for k, v in where.items()): continue
+                score = sum(1 for w in qt_l.split() if w.lower() in item.get("document", "").lower())
+                scored.append((score, item))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            top = scored[:n_results]
+            results[0].append([i["id"] for _, i in top])
+            results[1].append([i["metadata"] for _, i in top])
+            results[2].append([i["document"] for _, i in top])
+        return {"ids": results[0] if results[0] else [[]], "metadatas": results[1] if results[1] else [[]], "documents": results[2] if results[2] else [[]]}
+
+    def count(self): return len(self._data)
+
+    def get_all_lessons(self):
+        lessons = []
+        for item in self._data:
+            if item.get("metadata", {}).get("doc_type") == "failure_lessons":
+                try: lessons.append(FailurePatternLesson.from_json(item["metadata"]["structured_data"]))
+                except: pass
+        return lessons
+
+
+class MetaReflectorAgent:
+    def __init__(self, db_client=None, api_key=None, base_url=None):
+        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY")
+        self.base_url = base_url or "https://api.deepseek.com/v1"
+        self.collection = db_client or _LocalMemoryStore()
+
+    def distill_accident(self, node_id, accident_payload):
+        if self.api_key: return self._llm_distill(node_id, accident_payload)
+        return self._rule_distill(node_id, accident_payload)
+
+    def _llm_distill(self, node_id, payload):
+        prompt = f"Analyze failure [{node_id}]. Return JSON: error_type,problem_context,root_cause_analysis,anti_pattern_code,golden_patch_code,abstract_lint_rule\nPayload:{json.dumps(payload,ensure_ascii=False)}"
+        body = json.dumps({"model":"deepseek-v4-pro","messages":[{"role":"user","content":prompt}],"temperature":0.1,"response_format":{"type":"json_object"}}).encode()
+        req = urllib.request.Request(f"{self.base_url}/chat/completions", data=body, headers={"Authorization":f"Bearer {self.api_key}","Content-Type":"application/json"}, method="POST")
+        with urllib.request.urlopen(req, context=ssl.create_default_context(), timeout=60) as r:
+            data = json.loads(json.loads(r.read())["choices"][0]["message"]["content"])
+            data["node_id"] = node_id
+            return FailurePatternLesson.from_dict(data)
+
+    def _rule_distill(self, node_id, payload):
+        et = payload.get("error_type", payload.get("error", "Unknown"))
+        root_map = {"SyntaxError":"代码未完成括号闭合或拼写错误","TypeError":"装饰器返回None而非callable","AttributeError":"None对象访问属性——缺少空值检查"}
+        return FailurePatternLesson(
+            error_type=et,
+            problem_context=payload.get("context", payload.get("problem_context", f"Node {node_id} failure")),
+            root_cause_analysis=payload.get("root_cause", root_map.get(et,"待分析")),
+            anti_pattern_code=payload.get("anti_pattern",""), golden_patch_code=payload.get("fix",""),
+            abstract_lint_rule=payload.get("rule", f"检查{et}相关约束"), node_id=node_id)
+
+    def store_lesson(self, node_id, lesson):
+        self.collection.upsert(documents=[lesson.semantic_anchor()], metadatas=[{"doc_type":"failure_lessons","node_id":node_id,"error_type":lesson.error_type,"structured_data":lesson.to_json()}], ids=[f"lesson_{node_id}_{lesson.error_type.lower().replace(' ','_')}"])
+
+    def recall_lessons(self, query, n_results=3):
+        results = self.collection.query(query_texts=[query], n_results=n_results, where={"doc_type":"failure_lessons"})
+        lessons = []
+        if results.get("metadatas") and results["metadatas"][0]:
+            for meta in results["metadatas"][0]:
+                try: lessons.append(FailurePatternLesson.from_json(meta["structured_data"]))
+                except: pass
+        return lessons
+
+
+def build_adaptive_system_prompt(base_prompt, target_concept, collection=None, max_lessons=3):
+    if collection is None: collection = _LocalMemoryStore()
+    try: results = collection.query(query_texts=[target_concept], n_results=max_lessons, where={"doc_type":"failure_lessons"})
+    except: return base_prompt
+    if not results or not results.get("metadatas") or not results["metadatas"] or not results["metadatas"][0]: return base_prompt
+
+    parts = ["\n\n# ====== SYSTEM WRONG-QUESTION BOOK (LEARNED LESSONS) ======"]
+    seen, count = set(), 0
+    for meta in results["metadatas"][0]:
+        if count >= max_lessons: break
+        try:
+            l = json.loads(meta["structured_data"])
+            lid = f"{l.get('error_type','')}_{l.get('node_id','')}"
+            if lid in seen: continue
+            seen.add(lid); count += 1
+            parts.extend([
+                f"## 教训 {count}: [{l.get('error_type')}]",
+                f"  根因: {l.get('root_cause_analysis','')[:120]}",
+                f"  ❌ 反模式:\n```\n{l.get('anti_pattern_code','')}\n```",
+                f"  ✅ 金修:\n```\n{l.get('golden_patch_code','')}\n```",
+                f"  🔑 原则: {l.get('abstract_lint_rule','')}", ""
+            ])
+        except: continue
+    parts.append("# ====== END ======\n")
+    return base_prompt + "\n".join(parts)
+
+
+def create_reflector(api_key=None, memory_path=None):
+    return MetaReflectorAgent(db_client=_LocalMemoryStore(memory_path), api_key=api_key)
