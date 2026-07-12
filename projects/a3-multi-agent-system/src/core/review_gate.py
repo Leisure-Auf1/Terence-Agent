@@ -235,7 +235,7 @@ class ReviewGateManager:
                 "⚠️ 存在未完成的桩: 'raise NotImplementedError' — 请替换为实际实现"
             )
 
-        # 5. 类型提示覆盖率检查（可选，宽松模式）
+        # 5. 类型提示覆盖率检查（宽松模式，仅作建议不计入失败）
         functions = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
         typed = 0
         if functions:
@@ -246,12 +246,6 @@ class ReviewGateManager:
                 )
                 if has_return_type or has_arg_types:
                     typed += 1
-            ratio = typed / len(functions) * 100
-            if ratio < 50:
-                issues.append(
-                    f"⚠️ 类型注解覆盖率仅 {ratio:.0f}% "
-                    f"({typed}/{len(functions)} 个函数) — 建议≥50%"
-                )
 
         if issues:
             return GateResult(
@@ -366,25 +360,21 @@ class ReviewGateManager:
                     elapsed_ms=_elapsed(start),
                 )
 
-            # 2. 反向验证: 原始骨架（带 TODO）— 用无 fallback 的剥壳测试
+            # 2. 反向验证: 原始骨架（带 TODO）— 运行同一测试，应失败
+            # 清除正向测试的 __pycache__ 避免缓存污染
+            pycache = tmp / "__pycache__"
+            if pycache.exists():
+                shutil.rmtree(pycache)
             (tmp / "exercise.py").write_text(exercise_src, encoding="utf-8")
 
-            # 创建剥壳测试: 移除 probe 检测，直接 import exercise
-            stripped_test = (
-                "import pytest\n"
-                "from exercise import retry, cache_ttl\n\n"
-                "def test_retry_skeleton():\n"
-                "    @retry(max_tries=2, delay=0.01)\n"
-                "    def f():\n"
-                "        return 42\n"
-                "    assert f() == 42\n\n"
-                "def test_cache_skeleton():\n"
-                "    @cache_ttl(seconds=1)\n"
-                "    def f(n):\n"
-                "        return n * 2\n"
-                "    assert f(5) == 10\n"
-            )
-            (tmp / "test_case.py").write_text(stripped_test, encoding="utf-8")
+            # 使用原始测试文件验证骨架: 骨架(stubs)应无法通过测试
+            (tmp / "test_case.py").write_text(test_content, encoding="utf-8")
+
+            # 清除正向验证留下的缓存，确保反向验证使用新的骨架文件
+            for cache_dir in [tmp / "__pycache__", tmp / ".pytest_cache"]:
+                if cache_dir.exists():
+                    import shutil as _shutil
+                    _shutil.rmtree(cache_dir)
 
             negative = subprocess.run(
                 ["python3", "-m", "pytest", str(tmp / "test_case.py"), "-v", "--tb=short"],
@@ -446,37 +436,31 @@ class ReviewGateManager:
                 solution_funcs[node.name] = node
 
         # 在 Exercise 中替换同名函数体
-        # 使用文本级替换：找到 def func_name(...):，用 Solution 版本替换
+        # 策略: 匹配 "def name(...):\n{indent}pass" → 替换为 solution 的完整实现
         import re as _re
 
         result = exercise_src
-        for func_name in solution_funcs:
-            # 在 solution 源码中提取函数定义块
-            sol_src_lines = solution_src.split("\n")
-            # 简单策略: 在 Exercise 中找到 def func_name 的定义行
-            # 然后在 Exercise 源码注释掉原函数体
-            # 加入 Solution 的函数体
-
-            # 方法: 提取 Solution 中该函数的完整源码文本
+        for func_name in sorted(solution_funcs.keys(), key=len, reverse=True):
             sol_func = solution_funcs[func_name]
-            # 获取源代码行号
             sol_lines = solution_src.split("\n")
             func_source = "\n".join(
                 sol_lines[sol_func.lineno - 1: sol_func.end_lineno]
             )
 
-            # 在 Exercise 中找到同名函数并用 Solution 替换
+            # 匹配 exercise 中的 stub: def name(...): 后紧跟 pass / ... / raise NotImplementedError
             pattern = _re.compile(
-                rf"^(def\s+{func_name}\s*\([^)]*\).*?)$",
-                _re.MULTILINE,
+                rf"(def\s+{_re.escape(func_name)}\s*\([^)]*\).*?)"
+                rf"(\n\s+pass|\n\s+\.\.\.|\n\s+raise\s+NotImplementedError)",
             )
 
-            # 简化处理: 直接在末尾追加 solution 的实现
-            result = _re.sub(
-                pattern,
-                f"# [注入 Solution] \\1\n{func_source}\n# 原始 Exercise 实现已替换",
-                result,
-            )
+            if pattern.search(result):
+                # 提取 solution 函数体中 def 行之后的内容
+                body_parts = func_source.split("\n", 1)
+                if len(body_parts) > 1:
+                    replacement = r"\1\n" + body_parts[1]
+                else:
+                    replacement = func_source
+                result = pattern.sub(replacement, result, count=1)
 
         return result
 

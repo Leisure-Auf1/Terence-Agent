@@ -26,7 +26,7 @@ class _LocalMemoryStore:
 
     def _seed(self):
         for l in BUILTIN_LESSONS:
-            self._data.append({"id": f"lesson_{l.node_id}_{l.error_type.lower().replace(' ','_')}", "document": l.semantic_anchor(), "metadata": {"doc_type": "failure_lessons", "node_id": l.node_id, "error_type": l.error_type, "structured_data": l.to_json()}})
+            self._data.append({"id": f"lesson_{l.node_id}_{l.error_type.lower().replace(' ','_')}", "document": l.semantic_anchor(), "metadata": {"doc_type": "failure_lessons", "source": l.source, "node_id": l.node_id, "error_type": l.error_type, "structured_data": l.to_json()}})
         self._save()
 
     def upsert(self, documents, metadatas, ids):
@@ -41,7 +41,14 @@ class _LocalMemoryStore:
             qt_l = qt.lower()
             scored = []
             for item in self._data:
-                if where and not all(item.get("metadata", {}).get(k) == v for k, v in where.items()): continue
+                meta = item.get("metadata", {})
+                if where is None:
+                    pass
+                elif "$and" in where:
+                    if not all(meta.get(k) == v for c in where["$and"] for k, v in c.items()):
+                        continue
+                elif not all(meta.get(k) == v for k, v in where.items()):
+                    continue
                 score = sum(1 for w in qt_l.split() if w.lower() in item.get("document", "").lower())
                 scored.append((score, item))
             scored.sort(key=lambda x: x[0], reverse=True)

@@ -1,309 +1,701 @@
-# Node 3: 堆叠 · 描述符 · 框架实战
+# Node 3: Commit 链条与有向无环图 (DAG) 拓扑演化
 
-> **难度**: 攻坚  |  **预计阅读**: 20 分钟  |  **前置**: Node 1 & Node 2
-
----
-
-## §3.1 装饰器堆叠 — 洋葱剥皮 🧅
-
-多个 `@` 叠在一起的时候，最让我困惑的就是——谁先执行？来看：
-
-```python
-@A
-@B
-@C
-def foo():
-    pass
-# 等价于: foo = A(B(C(foo)))
-```
-
-❌ **直觉误导**: 从上往下读，以为 A 先执行。
-✅ **真相**: **从下往上应用，从上往下执行**。就像穿衣服——先穿最贴身的 C，再套 B，最后披上 A。别人看到你时，先看到 A（最外层）。
-
-我写一个具体例子验证：
-
-```python
-def make_decorator(name):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            print(f"{name} 进入")             # ① 进场
-            result = func(*args, **kwargs)    # ② 调用内层
-            print(f"{name} 退出")             # ③ 退场
-            return result
-        return wrapper
-    return decorator
-
-A = make_decorator("A")
-B = make_decorator("B")
-C = make_decorator("C")
-
-@A
-@B
-@C
-def test():
-    print("--- 核心执行 ---")
-
-test()
-# A 进入           ← 最外层先触发
-# B 进入           ← 往里走
-# C 进入           ← 最内层最后进入
-# --- 核心执行 ---  ← 真正的函数
-# C 退出           ← 最内层先退出
-# B 退出           ← 往外走
-# A 退出           ← 最外层最后退出
-```
-
-> 🧅 **洋葱剥皮**: 剥的时候从外到内（A→B→C），咬到核心，咀嚼完从内到外吐出来（C→B→A）。wrapper 套 wrapper，每一层都在进出时做自己的事情。
-
-❌ **常见翻车**: 把 `@timer` 放在 `@retry` 里面——timer 只测单词调用，不算重试时间。
-✅ **正确姿势**: `@timer` 在最外层 → 它包裹 `@retry` → timer 测量的就是"包含所有重试的总耗时"。
-
-```python
-@timer                          # ③ 最外层：计时整个调用（含重试）
-@retry(max_tries=3, delay=1)    # ② 中间层：失败就重试
-def fetch_data():
-    time.sleep(0.1)
-    return {"status": "ok"}
-```
-
-**本节新概念 (3个)**: 堆叠语法/等价转换 · 下→上应用 + 上→下执行 · 洋葱剥皮模型
+> **目标**: 用 Python 亲手创建一个 commit 对象（带 parent 指针），写进 `.git/objects/`，然后在内存里构建整个提交历史的 DAG，实现合并基查找和 ASCII 可视化。看完这节，`git log`、`git branch`、`git merge` 对你来说都只是指针游戏。
 
 ---
 
-## §3.2 描述符入门 — `__get__` 的本质
-
-描述符不是什么高深魔法——一个对象只要定义了 `__get__`，它就是描述符。Python 通过这套协议来"拦截"属性访问。
-
-❌ **不用描述符**: 每个属性手动写 getter/setter 调用，啰嗦。
-✅ **用描述符**: 属性访问自动触发 `__get__`，透明拦截。
-
-先看最简描述符长什么样：
-
-```python
-class UpperCase:
-    """把值自动转大写"""
-    def __get__(self, instance, owner):
-        # instance: 哪个实例访问的（p）
-        # owner:    描述符所在的类（Person）
-        return self._value.upper() if hasattr(self, '_value') else ''
-
-    def __set__(self, instance, value):
-        self._value = value
-
-class Person:
-    name = UpperCase()    # ← name 是一个描述符对象
-
-p = Person()
-p.name = "alice"          # 触发 UpperCase.__set__
-print(p.name)             # 触发 UpperCase.__get__ → "ALICE"
-```
-
-Python 访问属性时按这条链查找——优先级从上到下：
+## 0. 快速回顾：Node 1 + Node 2 我们搞懂了什么
 
 ```
-① 数据描述符（有 __get__ + __set__/__delete__）  ← 最高优先级
-② 实例的 __dict__                               ← 普通实例属性
-③ 非数据描述符（只有 __get__）                    ← @classmethod 等
-④ 类的 __dict__                                 ← 类属性
+Blob (Node 1):  文件内容 → blob <size>\0<content> → SHA1 → zlib → objects/
+Tree (Node 2):  文件名 + blob_SHA1 → tree <size>\0<entries> → SHA1 → zlib → objects/
+
+现在你有一个 tree SHA1，代表项目在某一个时刻的完整快照。
+但问题是: 这个快照是谁创建的？什么时候？为什么？以及，上一个快照是哪个？
 ```
 
-❌ **把数据存描述符自身的 `_value`**: 多个实例共享同一个描述符对象，后写的会覆盖前面的——数据全串了。
-✅ **正确做法**: 数据存在 `instance.__dict__` 里，描述符只负责拦截和转换。
-
-```python
-class UpperCase:
-    def __init__(self, attr_name):
-        self.attr_name = attr_name         # 存属性名，不存值
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self
-        return instance.__dict__.get(self.attr_name, '').upper()
-
-    def __set__(self, instance, value):
-        instance.__dict__[self.attr_name] = value  # 存到实例上
-```
-
-**本节新概念 (3个)**: 描述符协议(__get__) · 数据描述符 vs 非数据描述符 · 属性查找优先级链
+**答案：在 commit 对象里。** 一个 commit 把 tree、作者、时间、消息、以及**父 commit** 全部绑在一起。
 
 ---
 
-## §3.3 手写 @property — 自动门 🚪
+## 1. Commit 对象：Git 历史的原子单位
 
-你走进商场，门自动感应打开——你没推门，但它开了。`@property` 就是这个感觉：你写 `c.area`，看起来像读属性，实际上 Python 替你调了 `area()` 方法。
-
-❌ **手动 getter**: `c.get_area()` — 每次都要写括号，一看就是"函数调用"。
-✅ **@property**: `c.area` — 像普通属性一样自然，但其实背后跑了逻辑。
-
-Python 内置的 `property` 就是数据描述符。我自己实现一个简化版：
-
-```python
-class custom_property:
-    """简化版 @property——自动门"""
-    def __init__(self, fget=None, fset=None):
-        self.fget = fget          # 读的时候调这个
-        self.fset = fset          # 写的时候调这个
-
-    def __get__(self, instance, owner):
-        if instance is None:             # 类访问 → 返回描述符本身
-            return self
-        if self.fget is None:
-            raise AttributeError("不可读")
-        return self.fget(instance)       # 实例访问 → 推自动门
-
-    def __set__(self, instance, value):
-        if self.fset is None:
-            raise AttributeError("只读属性，不可设置")
-        self.fset(instance, value)
-
-    def setter(self, func):
-        """返回一个新的 custom_property，带上 setter"""
-        return type(self)(self.fget, func)   # 不可变——新建，不改旧
-```
-
-用起来跟内置 `@property` 一模一样：
-
-```python
-class User:
-    def __init__(self, name):
-        self._name = name
-
-    @custom_property
-    def name(self):                    # ① name = custom_property(name_getter)
-        return self._name
-
-    @name.setter                       # ② name = custom_property(getter, setter)
-    def name(self, value):             #    返回新实例，fget 和 fset 都配齐了
-        if not value.strip():
-            raise ValueError("名字不能为空")
-        self._name = value.strip()
-
-u = User("Alice")
-print(u.name)    # Alice — 像属性一样自然
-u.name = "Bob"   # 触发校验
-# u.name = ""    # ValueError: 名字不能为空
-```
-
-> 🚪 **自动门**: `c.area` 是走过去的动作（属性访问），门感应到你自动打开（`__get__` 调 fget），你不用伸手推（不用写括号）。`setter` 返回全新实例——老的门不拆，新门装上去。这是不可变设计，避免改了正在用的描述符出诡异 bug。
-
-**本节新概念 (3个)**: property 是数据描述符 · __get__/__set__ 协作实现自动门 · setter 不可变返回新实例
+### 本节概念 (3个)
+1. **Commit 对象**: 一个不可变的快照 + 元数据 + 父指针
+2. **Commit 字段**: tree, parent(s), author, committer, message
+3. **内容寻址的链**: commit 的 SHA1 由内容决定 → 改任何字段 = 新 SHA1
 
 ---
 
-## §3.4 Flask 路由 — 门牌号 📍
+### Commit 对象的原始字节格式
 
-前面学的装饰器都是「包装模式」——wrapper 裹住原函数加行为。Flask 的 `@app.route("/hello")` 不走这条路——它是**注册模式**：装饰器只把函数记录到路由表，原函数纹丝不动。
+```
+commit <size>\0tree <tree_sha1>
+parent <parent_sha1>
+author <name> <<email>> <timestamp> <timezone>
+committer <name> <<email>> <timestamp> <timezone>
 
-❌ **包装模式**: wrapper 替换原函数，调用 wrapper 就是调用装饰过的版本。
-✅ **注册模式**: 装饰器回头就走，函数还是那个函数——只是地址被登记到了路由表。
-
-我把 Flask 路由的核心理念浓缩成一个 20 行的 MiniFlask：
-
-```python
-class MiniFlask:
-    def __init__(self):
-        self._routes = {}               # 路由表: {门牌号: 函数}
-
-    def route(self, path):
-        """路由注册——给函数家门口钉门牌号"""
-        def decorator(func):
-            self._routes[path] = func   # ① 登记: "/hello" → hello 函数
-            return func                 # ② 不包装！原样返回
-        return decorator
-
-    def handle(self, path):
-        """有人敲门牌号——找到对应函数执行"""
-        handler = self._routes.get(path)
-        if handler:
-            return handler()
-        return "404 — 这个门牌号不存在"
-
-app = MiniFlask()
-
-@app.route("/hello")           # ← 给 hello 家门口钉门牌号 "/hello"
-def hello():
-    return "你好，世界！"
-
-@app.route("/about")
-def about():
-    return "关于我们"
-
-print(app.handle("/hello"))    # 你好，世界！
-print(app.handle("/about"))    # 关于我们
-print(app.handle("/secret"))   # 404 — 这个门牌号不存在
+<message>
 ```
 
-> 📍 **门牌号**: 每个 `@app.route("/xxx")` 就是给函数家门口钉一块门牌。请求来了，框架敲对应的门牌号，函数出来应答。装饰器在这里不是"给函数穿衣服"，而是"给函数分配地址"。
+看一下真实的 git commit 对象：
 
-❌ **误以为装饰器一定要包装**: 如果你以为装饰器必须 `return wrapper`，看到 Flask 的 `return func` 就会懵。
-✅ **装饰器 = 函数加工厂**: 加工方式不限于"包裹"——注册、标记、收集……都是合法操作。
+```bash
+$ git cat-file -p HEAD
+tree 7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b
+parent a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
+author Linus Torvalds <torvalds@linux-foundation.org> 1749778200 -0700
+committer Linus Torvalds <torvalds@linux-foundation.org> 1749778200 -0700
 
-**本节新概念 (3个)**: 注册模式 vs 包装模式 · 路由表(门牌号→函数) · 装饰器不包装只登记
+Initial commit: add README and main.py
+```
+
+```
+commit 对象的字节结构:
+
+  commit 217\0                                    ← header
+  tree 7a8b9c0d...\n                              ← 指向根 tree
+  parent a1b2c3d4...\n                            ← 指向上一个 commit
+  author Terence <terence@demo.dev> 1749778200 +0800\n
+  committer Terence <terence@demo.dev> 1749778200 +0800\n
+  \n                                              ← 空行分隔 header 和 message
+  Initial commit: add README\n                    ← 提交消息
+```
+
+> 💡 **关键洞察**: 每个 commit 都包含 `tree` 和 `parent` 两个指针。tree 指向"这个版本的全部文件"，parent 指向"上一个版本"。——这是单向链表！多个 parent 就是 DAG。
 
 ---
 
-## §3.5 权限装饰器 — 前置拦截 🛡️
+## 2. Commit 如何形成链条：从线性到分支
 
-Web 开发里，权限校验是最自然的装饰器场景——在函数执行前设一道关卡，不符合条件就直接挡回去。
-
-```python
-import functools
-
-current_user = {"name": "Alice", "role": "editor"}
-
-def require_role(role):
-    """只有特定角色才能进门"""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            if current_user.get("role") != role:       # ① 前置检查
-                raise PermissionError(f"需要 {role} 权限！")
-            return func(*args, **kwargs)               # ② 放行
-        return wrapper
-    return decorator
-
-@require_role("admin")
-def delete_all_users():
-    return "所有用户已删除！"
-
-@require_role("editor")
-def edit_article(article_id):
-    return f"文章 {article_id} 编辑完成"
-
-# delete_all_users()   # ❌ PermissionError — Alice 是 editor 不是 admin
-print(edit_article(42))  # ✅ 文章 42 编辑完成
-```
-
-❌ **手动在每个函数里写权限检查**: `if role != "admin": raise...` 散落各处，改角色名要全局搜索替换。
-✅ **用装饰器守卫**: 一行 `@require_role("admin")` 挂上去，守卫逻辑集中管理——改一处生效全局。
-
-更进一步——多个权限装饰器可以堆叠（回到 §3.1 的洋葱！）：
-
-```python
-def log_access(func):
-    """记录每次访问"""
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        print(f"[AUDIT] {current_user['name']} 调用 {func.__name__}")
-        return func(*args, **kwargs)
-    return wrapper
-
-@log_access                    # ② 外层: 记录日志
-@require_role("admin")         # ① 内层: 先查权限，不通过日志也不记
-def delete_all_users():
-    return "所有用户已删除！"
-```
-
-洋葱堆叠的意义此刻完全体现：**内层守卫拦截 → 外层日志才能记录合法访问**。顺序反过来，非法请求也会被记下来——审计日志就脏了。
-
-**本节新概念 (3个)**: 前置拦截模式 · 权限校验闭包 · 守卫+日志洋葱堆叠
+### 本节概念 (3个)
+4. **线性历史**: 每个 commit 一个 parent → 单向链表
+5. **分支**: 多个 commit 指向同一个 parent → DAG 分叉
+6. **合并**: 一个 commit 有两个 parent → DAG 合流
 
 ---
 
-## 速查卡
+```
+线性历史 (单分支):
+  A ← B ← C ← D (main)
+  每个箭头是 "parent" 指针
 
-| 来源 | 核心概念（一句话） |
-|------|-------------------|
-| **Node 1** | 函数是对象→闭包(隐形背包)→装饰器=穿衣服→@语法糖→三层套娃工厂→@wraps 身份证 |
-| **Node 2** | 带参装饰器=工厂→装饰器→wrapper 三层；类装饰器用 `__init__`+`__call__` 管状态；`@retry`/`@cache_ttl` 模板复用 |
-| **Node 3（本章）** | 堆叠=洋葱剥皮(下→上应用,上→下执行)；描述符=属性拦截器；@property=自动门；Flask 路由=门牌号(注册模式)；权限装饰器=前置守卫 |
+分支:
+       B ← C (feature)
+      /
+  A ← D ← E (main)
+  
+合并 (merge commit):
+       B ← C ──┐
+      /         \
+  A ← D ← E ← F (main, merge commit, 两个 parent: E 和 C)
+```
+
+**分支的本质**: branch 只是一个指向 commit 的**指针**。`refs/heads/main` 是一个文件，里面只有一行——当前 commit 的 SHA1。
+
+```bash
+$ cat .git/refs/heads/main
+a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
+
+$ git update-ref refs/heads/main <new_sha1>   # 这就是 git commit 做的事
+```
+
+> 💡 **关键洞察**: `git branch feature` 不是"复制"任何东西。它只是在 `.git/refs/heads/feature` 里写了一个 SHA1。`git checkout feature` 就是把 HEAD 指向这个文件。**分支是免费的**。
+
+---
+
+## 3. 🔧 动手：Python 实现 create_commit
+
+### 本节概念 (2个)
+7. **Commit 构造**: 拼接 header + 字段 + message → SHA1 → zlib → .git/objects
+8. **时间戳格式**: Unix timestamp + timezone offset
+
+---
+
+```python
+import hashlib
+import zlib
+import os
+import time
+
+
+def create_commit(
+    repo_path: str,
+    tree_sha1: str,
+    parent_sha1s: list[str],
+    message: str,
+    author_name: str = "Student",
+    author_email: str = "student@demo.dev",
+) -> str:
+    """
+    创建一个 commit 对象，写入 .git/objects，返回 SHA1。
+
+    参数:
+        repo_path: .git 目录路径
+        tree_sha1: 根 tree 的 40位hex SHA1
+        parent_sha1s: 父 commit 的 SHA1 列表 (空列表 = 初始 commit)
+        message: 提交消息
+        author_name: 作者名
+        author_email: 作者邮箱
+
+    返回: 40位hex SHA1
+
+    等价于: git commit-tree <tree> -p <parent> -m "<message>"
+    """
+    now = int(time.time())
+    tz = "+0800"
+
+    # 构造 commit 内容 (未加 header)
+    lines = [f"tree {tree_sha1}"]
+
+    for p in parent_sha1s:
+        lines.append(f"parent {p}")
+
+    lines.append(f"author {author_name} <{author_email}> {now} {tz}")
+    lines.append(f"committer {author_name} <{author_email}> {now} {tz}")
+    lines.append("")  # 空行
+    lines.append(message)
+
+    body = "\n".join(lines).encode("utf-8")
+
+    # 加 header: "commit <size>\0"
+    header = f"commit {len(body)}\0".encode("utf-8")
+    store = header + body
+
+    # SHA1
+    sha1_hex = hashlib.sha1(store).hexdigest()
+
+    # zlib 压缩 + 写入
+    compressed = zlib.compress(store)
+    obj_dir = os.path.join(repo_path, "objects", sha1_hex[:2])
+    obj_path = os.path.join(obj_dir, sha1_hex[2:])
+
+    os.makedirs(obj_dir, exist_ok=True)
+    if not os.path.exists(obj_path):
+        with open(obj_path, "wb") as f:
+            f.write(compressed)
+
+    return sha1_hex
+```
+
+**关键注意**: commit 的 `\n` 必须是 Unix 换行符 (`\n`，不是 `\r\n`)。message 最后**不要**多余的空行（除非你有意为之）。
+
+### 和真实 git 对比
+
+```bash
+$ git commit-tree <tree_sha1> -p <parent> -m "Initial commit"
+a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0  ← 你的 Python 输出应该一致
+```
+
+---
+
+## 4. 🔧 读取 commit 对象
+
+```python
+def read_commit(repo_path: str, sha1_hex: str) -> dict:
+    """
+    从 .git/objects 读取 commit 对象，解析为字典。
+
+    返回:
+      {
+        "tree": "7a8b9c0d...",
+        "parents": ["a1b2c3d4...", ...],
+        "author_name": "Terence",
+        "author_email": "terence@demo.dev",
+        "author_time": 1749778200,
+        "author_tz": "+0800",
+        "committer_name": "Terence",
+        "committer_email": "terence@demo.dev",
+        "committer_time": 1749778200,
+        "committer_tz": "+0800",
+        "message": "Initial commit",
+        "sha1": "a1b2c3d4..."
+      }
+
+    等价于: git cat-file -p <sha1>
+    """
+    obj_path = os.path.join(repo_path, "objects", sha1_hex[:2], sha1_hex[2:])
+    if not os.path.exists(obj_path):
+        raise FileNotFoundError(f"commit not found: {obj_path}")
+
+    with open(obj_path, "rb") as f:
+        raw = zlib.decompress(f.read())
+
+    # 跳过 header "commit <size>\0"
+    null_pos = raw.index(b"\x00")
+    body = raw[null_pos + 1:].decode("utf-8")
+
+    lines = body.split("\n")
+
+    result = {"parents": [], "sha1": sha1_hex}
+    i = 0
+
+    # 解析 header 字段
+    while i < len(lines) and lines[i] != "":
+        line = lines[i]
+        if line.startswith("tree "):
+            result["tree"] = line[5:]
+        elif line.startswith("parent "):
+            result["parents"].append(line[7:])
+        elif line.startswith("author "):
+            # author Name <email> timestamp tz
+            parts = line[7:].rsplit(" ", 2)
+            result["author_time"] = int(parts[1])
+            result["author_tz"] = parts[2]
+            name_email = parts[0]
+
+```python
+# 🔍 对应位置的核心代码示意
+# 详见下方完整实现
+```
+
+            # 提取 name 和 email
+            lt = name_email.rfind("<")
+            result["author_name"] = name_email[:lt].strip()
+            result["author_email"] = name_email[lt+1:-1]
+        elif line.startswith("committer "):
+            parts = line[10:].rsplit(" ", 2)
+            result["committer_time"] = int(parts[1])
+            result["committer_tz"] = parts[2]
+            name_email = parts[0]
+            lt = name_email.rfind("<")
+            result["committer_name"] = name_email[:lt].strip()
+            result["committer_email"] = name_email[lt+1:-1]
+        i += 1
+
+    # message: 空行之后的所有内容
+    if i + 1 < len(lines):
+        result["message"] = "\n".join(lines[i+1:]).rstrip("\n")
+
+    return result
+```
+
+---
+
+## 5. DAG 在内存里：用 dict 表示整条历史
+
+### 本节概念 (3个)
+9. **Commit DAG**: dict {sha1 → {tree, parents, message}}
+10. **遍历历史**: BFS/DFS 沿 parent 指针走
+11. **根 commit**: parent 列表为空的 commit
+
+---
+
+```python
+# 在内存里构建完整的 commit DAG
+commit_graph = {}  # {sha1_hex: read_commit(...)}
+
+def load_dag(repo_path: str, start_sha1: str) -> dict:
+    """
+    从 start_sha1 开始，沿 parent 指针遍历，加载整条历史到 dict。
+
+    返回: {sha1: commit_dict, ...}
+    """
+    graph = {}
+    queue = [start_sha1]
+
+    while queue:
+        sha1 = queue.pop(0)
+        if sha1 in graph:
+            continue
+
+        commit = read_commit(repo_path, sha1)  # ← 用上面的 read_commit
+        graph[sha1] = commit
+
+        for p in commit["parents"]:
+            if p not in graph:
+                queue.append(p)
+
+    return graph
+```
+
+---
+
+## 6. 🔧 找合并基 (Merge Base / LCA)
+
+### 本节概念 (3个)
+12. **合并基 (Merge Base)**: 两个分支的共同祖先
+13. **BFS 染色算法**: 从一个分支涂色，另一个分支 BFS 找第一个有色节点
+14. **`git merge-base`**: 就是做这个
+
+---
+
+```python
+def find_merge_base(graph: dict, sha1_a: str, sha1_b: str) -> str | None:
+    """
+    找两个 commit 的最近共同祖先 (LCA)。
+
+    算法: BFS 染色
+    1. 从 sha1_a 出发，BFS 遍历所有祖先，标记为 "visited from A"
+    2. 从 sha1_b 出发，BFS 遍历祖先，第一个在步骤1中标记的节点就是 LCA
+
+    返回: LCA 的 SHA1，或 None (无共同祖先)
+    """
+    if sha1_a not in graph or sha1_b not in graph:
+        return None
+
+    # Phase 1: 从 A 出发染色
+    colored = set()
+    queue = [sha1_a]
+    while queue:
+        current = queue.pop(0)
+        if current in colored:
+            continue
+        colored.add(current)
+        for p in graph[current].get("parents", []):
+            if p not in colored:
+                queue.append(p)
+
+    # Phase 2: 从 B 出发找第一个染色节点
+    queue = [sha1_b]
+    visited = set()
+    while queue:
+        current = queue.pop(0)
+        if current in visited:
+            continue
+        visited.add(current)
+
+        if current in colored:
+            return current  # ← 找到了!
+
+        for p in graph[current].get("parents", []):
+            if p not in visited:
+                queue.append(p)
+
+    return None  # 无共同祖先
+```
+
+```
+可视化示例:
+
+       B ← C (feature)
+      /     \
+  A ← D ← E ← F (main)
+
+  merge_base(C, E) = A   ← A 是两者最近的共同祖先
+  merge_base(C, F) = C   ← C 是 F 的祖先之一 (F 有两个 parent: E 和 C)
+  merge_base(C, D) = A   ← 追溯到 A
+
+  git merge-base feature main → A
+```
+
+---
+
+## 7. 🔧 ASCII 可视化 DAG
+
+### 本节概念 (2个)
+14. **DAG 可视化**: 把 dict 转成 `git log --graph` 风格的 ASCII
+15. **拓扑排序**: 按时间/拓扑序排列节点
+
+---
+
+```python
+def visualize_dag(graph: dict, head_sha1: str, refs: dict = None) -> str:
+    """
+    把 commit DAG 画成 ASCII 图。
+
+    graph: {sha1: {"parents": [...], "message": "..."}}
+    head_sha1: 从哪个 commit 开始画
+    refs: {"main": sha1, "feature": sha1, ...}  可选，标注分支名
+
+    返回: ASCII 字符串
+    """
+    refs = refs or {}
+    # 反向索引: sha1 → branch names
+    sha1_to_refs = {}
+    for name, s in refs.items():
+        sha1_to_refs.setdefault(s, []).append(name)
+
+    lines = []
+
+    def _render(sha1: str, prefix: str, is_last: bool, visited: set):
+        if sha1 in visited:
+            return
+        visited.add(sha1)
+
+        commit = graph.get(sha1, {})
+
+        # 分支标签
+        tags = sha1_to_refs.get(sha1, [])
+        tag_str = f" ({', '.join(tags)})" if tags else ""
+
+        # 短 SHA1 + 消息
+        short_sha1 = sha1[:7]
+        msg = commit.get("message", "")[:50]
+        connector = "└──" if is_last else "├──"
+        lines.append(f"{prefix}{connector} {short_sha1}{tag_str} {msg}")
+
+        parents = commit.get("parents", [])
+        for i, p in enumerate(parents):
+            is_last_p = (i == len(parents) - 1)
+            if len(parents) > 1:
+                new_prefix = prefix + ("    " if is_last else "│   ")
+            else:
+                new_prefix = prefix + ("    " if is_last else "│   ")
+            _render(p, new_prefix, is_last_p, visited)
+
+    _render(head_sha1, "", True, set())
+    return "\n".join(lines)
+```
+
+```
+示例输出:
+
+└── a1b2c3d (main, HEAD) Merge feature into main
+    └── e5f6a7b Update README
+        ├── c9d0e1f (feature) Add new feature
+        │   └── a1b2c3d Initial commit
+        └── b3c4d5e Fix bug in main
+            └── a1b2c3d Initial commit
+```
+
+---
+
+## 8. 模拟整个 Git 工作流
+
+现在你已经有了所有积木块，可以在 Python 里模拟一个完整的 Git 工作流：
+
+```python
+def simulate_git_workflow(repo_path: str):
+    """
+    纯 Python 模拟: init → add → commit → branch → merge
+    """
+    os.makedirs(os.path.join(repo_path, "objects"), exist_ok=True)
+    os.makedirs(os.path.join(repo_path, "refs", "heads"), exist_ok=True)
+
+    # Step 1: 写文件 → blob
+    # (沿用 Node 1 的 hash_object)
+    blob_readme = hash_object(b"# My Project\n", repo_path)
+    blob_main = hash_object(b"print('hello')\n", repo_path)
+
+    # Step 2: 创建 tree
+    entries = [
+        (100644, "README.md", blob_readme),
+        (100644, "main.py", blob_main),
+    ]
+    tree_sha1 = build_tree(entries, repo_path)  # Node 2
+
+    # Step 3: 创建初始 commit
+    init_commit = create_commit(repo_path, tree_sha1, [],
+                                "Initial commit", "Student")
+
+    # Step 4: 更新分支指针
+    ref_path = os.path.join(repo_path, "refs", "heads", "main")
+    with open(ref_path, "w") as f:
+        f.write(init_commit + "\n")
+
+    print(f"✅ 初始 commit: {init_commit[:7]}")
+    print(f"✅ 分支 main → {init_commit[:7]}")
+
+    # Step 5: 修改文件，创建第二个 commit
+    blob_readme_v2 = hash_object(b"# My Project v2\n", repo_path)
+    entries_v2 = [
+        (100644, "README.md", blob_readme_v2),
+        (100644, "main.py", blob_main),
+    ]
+    tree_v2 = build_tree(entries_v2, repo_path)
+    commit_v2 = create_commit(repo_path, tree_v2, [init_commit],
+                               "Update README", "Student")
+
+    # 移动 main 分支指针
+    with open(ref_path, "w") as f:
+        f.write(commit_v2 + "\n")
+
+    print(f"✅ 第二个 commit: {commit_v2[:7]}")
+    print(f"✅ 分支 main → {commit_v2[:7]}")
+
+    # 展示历史
+    graph = load_dag(repo_path, commit_v2)
+    print("\n── DAG 可视化 ──")
+    print(visualize_dag(graph, commit_v2, {"main": commit_v2}))
+```
+
+---
+
+## 9. 综合拓扑：blob → tree → commit → refs/heads → HEAD
+
+```
+                    HEAD
+                     │
+                     ▼
+              refs/heads/main          ← 一个文本文件, 内容是一个 SHA1
+                     │
+                     ▼
+         ┌─── commit a1b2c3d4 ───┐
+         │  tree:    7a8b9c0d    │──────┐
+         │  parent:  (none)      │      │
+         │  author:  Student     │      │
+         │  message: Init        │      │
+         └───────────────────────┘      │
+                                        ▼
+                              ┌─── tree 7a8b9c0d ─────┐
+                              │  100644 README.md      │──→ blob 95d09f2b
+                              │  100644 main.py        │──→ blob e69b6f2a
+                              │  40000  src/           │──→ tree ffee9933
+                              └────────────────────────┘        │
+                                                                ▼
+                                                    ┌─── tree ffee9933 ──┐
+                                                    │  100644 utils.py   │──→ blob aabbccdd
+                                                    └────────────────────┘
+
+  blob 95d09f2b:  blob 14\0# My Project\n
+  blob e69b6f2a:  blob 15\0print('hello')\n
+  blob aabbccdd:  blob 18\0def util(): pass\n
+
+  每一个对象都在 .git/objects/ 里, 用 zlib 压缩存储。
+```
+
+**整个 Git 数据库的本质 = 一个以 SHA1 为键的键值存储，值是带类型标签的 zlib 压缩数据。**
+
+---
+
+## 9b. ❌ vs ✅ 对比：`git log --graph` 黑盒子 vs 你的 DAG 手动遍历
+
+这是为你（底层逻辑控）准备的横评。把两个世界放在一起：
+
+### ❌ 你讨厌的方式：`git log --graph --oneline`
+
+```bash
+$ git log --graph --oneline
+* a1b2c3d (HEAD -> main) Merge feature into main
+|\
+| * c9d0e1f (feature) Add new feature
+* | e5f6a7b Update README
+|/
+* d4c3b2a Initial commit
+```
+
+你看到了什么？一个漂亮的 ASCII 图。但你**不知道**：
+- 这些 `*` 和 `|` 和 `\` 是怎么画出来的
+- Git 内部是通过什么数据结构判断 C 和 E 分叉的
+- `merge-base` 的算法是什么
+- 如果图很复杂（几千个 commit），`git log --graph` 会不会漏节点
+- 分支指针和 commit SHA1 之间的关系
+
+**这就是黑魔法。** 敲命令，看图，但你对算法一无所知。
+
+### ✅ 你写的方式：`load_dag()` + `find_merge_base()` + `visualize_dag()`
+
+```python
+# 1. 你自己从 .git/objects 加载整个 DAG
+graph = {}
+queue = [head_sha1]
+while queue:
+    sha1 = queue.pop(0)
+    if sha1 in graph:
+        continue
+    commit = read_commit(repo_path, sha1)   # ← 你 Node 3 写的 read_commit
+    graph[sha1] = commit
+    for p in commit["parents"]:
+        queue.append(p)
+
+# 2. 你自己写 BFS 染色算法找 merge-base
+#    Phase 1: 从 A 出发, 把祖先全染色
+#    Phase 2: 从 B 出发 BFS, 第一个有色节点就是 LCA
+
+# 3. 你自己递归渲染 ASCII 图
+#    sha1[:7] + branch_tag + message[:50]
+#    "├──" / "└──" + "│   " / "    " 缩进
+```
+
+### 核心差异
+
+| 层面 | ❌ `git log --graph` | ✅ 你的手动遍历 |
+|:-----|:---------------------|:----------------|
+| 数据来源 | Git 内部 walker（你看不到） | 你从 `.git/objects/` 逐个 `zlib.decompress()` |
+| 图结构 | Git C 代码维护的 `commit_graph` | 你写的 Python `dict`: `{sha1: {"parents": [...], ...}}` |
+| 遍历算法 | Git 的 `revision.c` (5000+ 行 C) | 你的 `while queue:` BFS, ~15 行 |
+| LCA 算法 | Git 的内部实现 | 你的 "BFS 染色" 两步算法 |
+| ASCII 渲染 | `graph.c` 复杂状态机 | 你的 `_render()` 递归, ~20 行 |
+| 分支本质 | 你不知道 `refs/heads/main` 是啥 | 你知道它就是一个**文本文件**, 里面一行 SHA1 |
+
+### 你现在知道了什么
+
+```bash
+$ cat .git/refs/heads/main
+3b18e512dba79e4c8300dd08aeb37f8e728b8dad
+```
+
+就这一行。`git log` 就是从这个 SHA1 出发，沿 `parent` 指针一路走回去。
+
+**分支不是"复制代码"——它是 "SHA1 的别名"。** 你创建 100 个分支，Git 只在 `.git/refs/heads/` 下写了 100 个文本文件，每个 41 字节。
+
+> 💡 **这就是你把 4 个函数写一遍的意义。** 你不再"相信 Git 能记录历史"——你**知道**它就是把 `tree` + `parent` + `author` + `message` 拼成一个文本，SHA1 后 zlib 压缩，扔进 `.git/objects/`。分支就是 `.git/refs/heads/` 下的一个 41 字节文本文件。
+
+---
+
+## 回顾：本节你搞懂了什么
+
+| 序号 | 概念 | 一句话 |
+|------|------|--------|
+| 1 | Commit 对象 | tree + parent(s) + author + committer + message |
+| 2 | Commit 字段 | `commit <size>\0` + 多行 key-value + 空行 + message |
+| 3 | SHA1 不变性 | 改任何字段 = 新 SHA1 = 新 commit |
+| 4 | 线性历史 | 每个 commit 一个 parent → 单向链表 |
+| 5 | 分支 | `refs/heads/xxx` 文件里写一个 SHA1 |
+| 6 | 合并 | 一个 commit 有两个 parent → DAG 合流 |
+| 7 | create_commit | 拼接字段 → header → SHA1 → zlib → objects/ |
+
+```python
+# 🔍 对应位置的核心代码示意
+# 详见下方完整实现
+```
+
+| 8 | 时间戳 | Unix timestamp + timezone offset (如 `+0800`) |
+| 9 | Commit DAG | dict {sha1 → {tree, parents, message}} |
+| 10 | BFS 遍历 | 沿 parent 指针走，构建/查询整个图 |
+| 11 | 根 commit | parent 列表为空的初始提交 |
+| 12 | Merge Base (LCA) | BFS 染色算法找最近共同祖先 |
+| 13 | `git merge-base` | === `find_merge_base()` |
+| 14 | DAG 可视化 | 递归渲染 parent 指针树 |
+| 15 | 拓扑排序 | 按 parent 依赖关系排列节点 |
+| 16 | Git 数据库本质 | SHA1 → zlib(type size\0content) 的 K-V 存储 |
+
+### ❌ 现在你该扔掉的想法
+- "commit 是某种特殊的、我看不懂的数据库记录"
+- "`git log` 和 `git branch` 依赖某种黑魔法索引"
+- "合并基是 Git 内部的一个神秘算法，我理解不了"
+
+### ✅ 换成这些
+- "commit 就是 `.git/objects` 里的一个文本记录，字段包括 tree、parent、author、message"
+- "`git log` = 沿着 parent 指针遍历 commit 对象链"
+- "`git merge-base` = BFS 染色，找一个被两个分支都访问过的节点"
+- "分支 = `.git/refs/heads/xxx` 里的一个 SHA1，HEAD = `.git/HEAD` 指向当前分支"
+
+---
+
+> **三节总结**: 你现在完全理解了 Git 的物理存储层。
+> - **Blob** = 文件内容 + hash
+> - **Tree** = 文件名 + blob 指针 → 目录快照
+> - **Commit** = tree + parent + 元数据 → 历史链
+> - **Refs** = 指向 commit 的命名指针 → 分支和标签
+>
+> 每一层都是纯文本/二进制 + zlib 压缩。**没有魔法。只有数据结构。**
+
+---
+
+## 练习
+
+### 练习 1: 实现 `create_commit`
+在 `outputs/node-3-tests.py` 中实现：
+- 接收 tree_sha1, parent_sha1s, message, author
+- 按 commit 格式拼接字段 → SHA1 → zlib → 写入 .git/objects
+- 返回 40位 hex SHA1
+
+### 练习 2: 实现 `read_commit`
+实现 `read_commit(repo_path, sha1_hex)` → dict:
+- 读取 → zlib 解压 → 跳过 header → 解析字段
+- 正确解析 parent 列表、author/committer 的时间戳和时区
+
+### 练习 3 (挑战): 实现 `find_merge_base`
+实现 `find_merge_base(graph, sha1_a, sha1_b)` → SHA1:
+- BFS 染色算法，在两个 DAG 分支中找到最近共同祖先
+
+### 练习 4 (挑战): 实现 `visualize_dag`
+实现 `visualize_dag(graph, head_sha1)` → ASCII 字符串:
+- 递归渲染，标注分支名，正确缩进
+
+**运行验证**:
+```bash
+python outputs/node-3-tests.py
+```

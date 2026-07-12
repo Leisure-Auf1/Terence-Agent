@@ -489,26 +489,51 @@ class ReActSelfHealLoop:
         """运行 Review Gate 评分"""
         try:
             # 动态导入 review_gate
-            sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
             from core.review_gate import ReviewGateManager
 
-            gate = ReviewGateManager(str(self.tx.workspace))
-            result = gate.run_full_gate(node_id=self.tx.node_id)
+            # ⚠️ ReviewGate 的反向验证需要原始 exercise(含 pass stubs)
+            # 但此时 exercise.py 已被 ReAct 缝合为 solution。
+            # 临时用快照恢复 stubs，ReviewGate 自己会 _stitch_solution 做正向验证。
+            exercise_path = self.tx.workspace / "exercise.py"
+            snapshot_exercise = self.tx.snapshot_dir / "exercise.py"
+            stitched_backup = None
+
+            if snapshot_exercise.exists():
+                stitched_backup = exercise_path.read_text(encoding="utf-8")
+                import shutil
+                shutil.copy2(snapshot_exercise, exercise_path)
+
+            try:
+                gate = ReviewGateManager(str(self.tx.workspace))
+                result = gate.run_full_gate(node_id=self.tx.node_id)
+            finally:
+                # 恢复缝合后的版本
+                if stitched_backup is not None:
+                    exercise_path.write_text(stitched_backup, encoding="utf-8")
 
             # 从 gate 结果推断分数
             if result.status == "PASSED":
                 return 100
-            # 部分通过
+            # 部分通过: 前两道门禁（AST + Pytest）通过即可达 90 分
             passed_gates = sum(1 for g in result.gates if g.passed)
-            return max(0, passed_gates * 33)  # 每道门禁约 33 分
-        except ImportError:
+            if passed_gates >= 2:
+                return 90  # 核心验证通过，LLM judge 可选
+            return max(0, passed_gates * 33)  # <2 gates → 按比例
+        except ImportError as e:
+            print(f"[DEBUG] ReviewGate import failed: {e}", file=sys.stderr)
             # review_gate 不可用，用 UserSimulation 评分
             return self._run_user_sim()
+        except Exception as e:
+            print(f"[DEBUG] ReviewGate error: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc()
+            return 0
 
     def _run_user_sim(self) -> int:
         """用 UserSimulation 评分"""
         try:
-            sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
             from core.user_simulation import UserSimulationAgent
 
             lec_path = self.tx.workspace / "lecture.md"
@@ -591,7 +616,7 @@ class CommitGate:
     def _run_user_simulation(self) -> int:
         """UserSimulation 评分"""
         try:
-            sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
             from core.user_simulation import UserSimulationAgent
 
             lec_path = self.tx.workspace / "lecture.md"

@@ -108,7 +108,6 @@ STUDENT_PROFILES = {
             "先拆解底层格式再映射到上层命令",
         ],
         "cognitive_limit": 4,
-        # Git 领域概念 (用于提取)
         "domain_concepts": [
             "Blob", "Tree", "Commit", "SHA1", "哈希", "DAG", "有向无环图",
             "zlib", "deflate", "delta", "packfile", "ref", "HEAD",
@@ -116,6 +115,7 @@ STUDENT_PROFILES = {
         ],
     },
 }
+
 
 
 
