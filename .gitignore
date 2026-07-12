@@ -9,5 +9,8 @@ Thumbs.db
 # Custom
 *.log
 
+# Preflight cache (auto-generated, do not commit)
+.hermes/preflight-*.md
+
 # Nested project repos (各自独立管理)
 projects/campus-task/
