@@ -298,6 +298,26 @@ async function getPage(browser) {
 // 导航工具
 // =====================================================================
 
+/** 展开所有 Ant Design 折叠面板（让后面单位内的 task item 可见） */
+async function expandAllSections(page) {
+  const expanded = await page.evaluate(() => {
+    const headers = document.querySelectorAll('.ant-collapse-header');
+    let count = 0;
+    headers.forEach(h => {
+      const item = h.closest('.ant-collapse-item');
+      if (item && !item.classList.contains('ant-collapse-item-active')) {
+        h.click();
+        count++;
+      }
+    });
+    return count;
+  });
+  if (expanded > 0) {
+    verbose(`展开 ${expanded} 个折叠面板`);
+    await sleep(1000);
+  }
+}
+
 /** 导航到课程详情页，等待微前端加载 */
 async function goCourse(page) {
   const t0 = Date.now();
@@ -320,10 +340,12 @@ async function goCourse(page) {
     const n = await page.evaluate(() => document.querySelectorAll('[class*="taskItemInnerLayout"]').length);
     if (n > 0) {
       verbose(`课程树已加载: ${n}个任务 (${Date.now()-t0}ms)`);
+      await expandAllSections(page);
       return true;
     }
     await sleep(1000);
   }
+  await expandAllSections(page);
   console.warn('⚠️  课程树加载超时，可能微前端未加载');
   return false;
 }
@@ -400,17 +422,29 @@ async function dismissModals(page) {
 /** 提交按钮（通用） */
 async function submitAnswers(page) {
   const btn = await page.evaluate(() => {
-    const el = document.querySelector('a.btn');
-    if (!el) return false;
-    el.scrollIntoView({ block: 'center' });
-    const keys = Object.keys(el);
-    const pk = keys.find(k => k.startsWith('__reactProps'));
-    if (pk && el[pk]?.onClick) {
-      el[pk].onClick({ preventDefault() {}, stopPropagation() {}, target: el, currentTarget: el });
+    // 优先找含"提 交"/"提交"的按钮，其次是"下一题"，最后取最后一个 a.btn
+    const allBtns = document.querySelectorAll('a.btn');
+    let target = null;
+    for (const b of allBtns) {
+      const t = b.innerText.trim();
+      if (t.includes('提 交') || t.includes('提交') || t.includes('下一题')) {
+        target = b;
+        // 如果是"下一题"且后面还有"提 交"，优先取"提 交"
+        if (t.includes('提 交') || t.includes('提交')) break;
+      }
     }
-    el.click();
-    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    // 兜底: 取最后一个 a.btn（通常是最右边的操作按钮）
+    if (!target && allBtns.length > 0) target = allBtns[allBtns.length - 1];
+    if (!target) return false;
+    target.scrollIntoView({ block: 'center' });
+    const keys = Object.keys(target);
+    const pk = keys.find(k => k.startsWith('__reactProps'));
+    if (pk && target[pk]?.onClick) {
+      target[pk].onClick({ preventDefault() {}, stopPropagation() {}, target, currentTarget: target });
+    }
+    target.click();
+    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     return true;
   });
   if (!btn) return null;
@@ -1026,6 +1060,7 @@ async function main() {
         break;
 
       case 'execute':
+        await goCourse(page);
         await executeAnswers(page, EXEC_PAYLOAD);
         break;
 
