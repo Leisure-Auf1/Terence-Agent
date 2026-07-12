@@ -21,6 +21,7 @@ if str(_project_root / "src") not in sys.path:
 from core.agent_router import DynamicProfile, AgentRouter
 from agents.profile_agent import ProfileAgent
 from agents.planner_agent import PlannerAgent, LearningPlan
+from memory.memory_manager import MemoryManager
 
 
 # ──────────────────────────────────────────────
@@ -68,6 +69,7 @@ def get_agents():
         "profile": ProfileAgent(),
         "planner": PlannerAgent(),
         "router": AgentRouter(),
+        "memory": MemoryManager(auto_seed=True),
     }
 
 agents = get_agents()
@@ -86,6 +88,15 @@ if extract_btn or "profile" in st.session_state:
     if "profile_result" in st.session_state:
         result = st.session_state["profile_result"]
         profile = result.profile
+
+        # ── 保存到 Memory ──
+        student_id = st.session_state.get("student_id", "demo_student")
+        mm = agents["memory"]
+        mm.update_student_memory(
+            student_id,
+            profile=profile.to_dict(),
+        )
+        st.session_state["student_id"] = student_id
 
         st.header("📊 学生六维画像")
         profile_data = profile.to_dict()
@@ -144,6 +155,43 @@ if extract_btn or "profile" in st.session_state:
     # 总览
     st.metric("📊 总学习时长", f"{plan.total_minutes} 分钟", f"{len(plan.nodes)} 个节点")
 
+    # ── Student Memory 面板 ──
+    with st.expander("🧠 学生长期记忆 (Memory)", expanded=False):
+        student_id = st.session_state.get("student_id", "demo_student")
+        mm = agents["memory"]
+        summary = mm.get_learning_summary(student_id)
+
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            st.metric("总交互次数", summary["total_interactions"])
+            st.metric("平均评分", f"{summary['avg_score']}/100")
+        with col_m2:
+            st.metric("学习会话", summary["total_sessions"])
+            st.metric("偏好风格", summary.get("preferred_style", "-"))
+        with col_m3:
+            st.metric("学习节奏", summary.get("avg_pace", "-"))
+
+        # 优势
+        if summary["strengths"]:
+            st.subheader("💪 优势概念")
+            for s in summary["strengths"]:
+                stars = "⭐⭐⭐" if s["mastery"] >= 0.8 else "⭐⭐"
+                st.text(f"{stars} {s['concept']} ({s['mastery']:.0%})")
+
+        # 薄弱
+        if summary["weaknesses_mastery"] or summary["weaknesses_reported"]:
+            st.subheader("🔧 薄弱环节")
+            for w in summary["weaknesses_mastery"][:3]:
+                st.text(f"⚠️ {w['concept']}: {w['mastery']:.0%}")
+            for w in summary["weaknesses_reported"][:3]:
+                st.text(f"📋 {w['concept']}: {w['count']}次错误")
+
+        # 历史
+        if summary["recent_feedback"]:
+            st.subheader("📝 最近学习记录")
+            for fb in summary["recent_feedback"]:
+                st.text(f"  {fb['node_id']}: {fb['score']}分")
+
     # ──────────────────────────────────────────
     # Step 3: 资源生成预览 (预留)
     # ──────────────────────────────────────────
@@ -195,16 +243,20 @@ else:
     | 阶段 | Agent | 功能 |
     |------|-------|------|
     | 画像提取 | ProfileAgent | 自然语言 → 六维画像 |
-    | 路径规划 | PlannerAgent | 画像 + 知识结构 → 个性化路径 |
+    | 学生记忆 | StudentMemory | 长期学习状态追踪 |
+    | 路径规划 | PlannerAgent | 画像 + 记忆 → 个性化路径 |
     | 资源生成 | ContentAgent | 5 大教学资产 |
     | 质量把关 | ReviewGate | 三道门禁 |
-    | 反馈优化 | FeedbackLoop | 模拟试读 → MetaReflector → 迭代优化 |
+    | 反馈优化 | FeedbackLoop | UserSim → MetaReflector |
+    | 经验记忆 | ExperienceMemory | Agent 失败经验库 |
 
     ### 📐 架构
 
     ```
-    Student → ProfileAgent → DynamicProfile → PlannerAgent
-    → LearningPlan → ContentAgent → ReviewGate
-    → UserSim → Feedback → MetaReflector → Profile更新
+    Student → ProfileAgent → StudentMemory
+    → DynamicProfile → PlannerAgent → LearningPlan
+    → ContentAgent → ReviewGate → UserSim
+    → FeedbackRecord → MetaReflector → ExperienceMemory
+    → Profile更新 → 下一轮生成
     ```
     """)
