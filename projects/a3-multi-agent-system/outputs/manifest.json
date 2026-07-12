@@ -1,0 +1,53 @@
+{
+  "pipeline": "A3 — 基于大模型的个性化资源生成与学习多智能体系统",
+  "generated_at": "2026-07-12T23:15:00+08:00",
+  "total_nodes": 3,
+  "nodes": [
+    {
+      "id": "node-1",
+      "title": "从函数是一等公民到第一个装饰器",
+      "difficulty": "入门",
+      "status": "COMPLETED",
+      "tutorial_path": "outputs/node-1-tutorial.md",
+      "tests_path": "outputs/node-1-tests.py",
+      "tests_result": "11/11 PASS",
+      "review_gate": "3/3 PASS (AST+Pytest+Judge)",
+      "user_simulation_score": 85,
+      "completion_signal": "SIG_NODE_1_VERIFIED_HOTFIX"
+    },
+    {
+      "id": "node-2",
+      "title": "带参数装饰器、functools.wraps 与高级装饰器模式",
+      "difficulty": "进阶",
+      "status": "COMPLETED",
+      "tutorial_path": "outputs/node-2-tutorial.md",
+      "tests_path": "outputs/node-2-tests.py",
+      "tests_result": "11/11 PASS",
+      "review_gate": "3/3 PASS (AST+Pytest+Judge)",
+      "user_simulation_score": 85,
+      "hotfix_rounds": 2,
+      "completion_signal": "SIG_NODE_2_VERIFIED_HOTFIX"
+    },
+    {
+      "id": "node-3",
+      "title": "装饰器堆叠、property 原理与框架实战",
+      "difficulty": "攻坚",
+      "status": "COMPLETED",
+      "tutorial_path": "outputs/node-3-tutorial.md",
+      "tests_path": "outputs/node-3-tests.py",
+      "tests_result": "21/21 PASS",
+      "review_gate": "3/3 PASS",
+      "user_simulation_score": 85,
+      "completion_signal": null,
+      "hotfix_rounds": 4
+    }
+  ],
+  "summary": {
+    "total_test_cases": 43,
+    "all_tests_pass": true,
+    "review_gate_gates_passed": 9,
+    "average_user_simulation_score": 85,
+    "pipeline_complete": true,
+    "next_node": null
+  }
+}
