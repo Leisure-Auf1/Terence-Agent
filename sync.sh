@@ -30,5 +30,5 @@ done
 
 git add -A
 git commit -m "$MSG"
-git -c http.sslVerify=false push
+git -c http.proxy="http://127.0.0.1:7897" push
 echo "✅ 已同步: $MSG"
