@@ -100,6 +100,29 @@ class MetaReflectorAgent:
 
     def store_lesson(self, node_id, lesson):
         self.collection.upsert(documents=[lesson.semantic_anchor()], metadatas=[{"doc_type":"failure_lessons","node_id":node_id,"error_type":lesson.error_type,"structured_data":lesson.to_json()}], ids=[f"lesson_{node_id}_{lesson.error_type.lower().replace(' ','_')}"])
+        # ── 同步写入 ExperienceMemory ──
+        self._sync_to_experience(node_id, lesson)
+
+    def _sync_to_experience(self, node_id, lesson):
+        """同步教训到全局 ExperienceMemory"""
+        if not hasattr(self, "_exp_store") or self._exp_store is None:
+            return
+        try:
+            self._exp_store.add_lesson(
+                problem=lesson.problem_context[:120],
+                cause=lesson.root_cause_analysis[:120],
+                context=f"node-{node_id} / {lesson.error_type}",
+                solution=lesson.golden_patch_code[:200] or lesson.abstract_lint_rule,
+                source="metareflector",
+                node_id=node_id,
+                severity=lesson.severity,
+            )
+        except Exception:
+            pass  # 静默失败, 不阻塞主流程
+
+    def set_experience_store(self, exp_store) -> None:
+        """注入 ExperienceMemoryStore 实例"""
+        self._exp_store = exp_store
 
     def recall_lessons(self, query, n_results=3):
         results = self.collection.query(query_texts=[query], n_results=n_results, where={"doc_type":"failure_lessons"})
