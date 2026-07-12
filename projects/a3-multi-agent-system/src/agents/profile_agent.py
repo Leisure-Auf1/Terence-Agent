@@ -165,6 +165,7 @@ class ProfileAgent:
     LLM_PROMPT_TEMPLATE = """你是一个学生画像分析专家。请根据学生的自然语言描述，提取六维学习画像。
 
 学生描述: {student_text}
+{history_context}
 
 请输出 JSON，包含以下字段 (必须从候选值中选择):
 
@@ -179,6 +180,82 @@ class ProfileAgent:
 }}
 
 只输出 JSON，不要任何额外文本。"""
+
+    # ── Memory-aware 画像提取 ───────────────
+
+    KNOWLEDGE_PROGRESSION = ["junior_dev", "mid_level", "senior"]
+
+    def extract_with_memory(
+        self,
+        text: str,
+        student_memory: Any = None,  # StudentMemory
+    ) -> "ProfileExtractionResult":
+        """
+        结合历史画像的画像提取.
+
+        读取 StudentMemory 中的历史画像，结合当前描述推理画像演进。
+        例如: 上次 junior_dev → 本次描述有进步 → 升级到 mid_level
+
+        Args:
+            text: 学生自然语言描述
+            student_memory: StudentMemory 实例 (可选)
+
+        Returns:
+            ProfileExtractionResult
+        """
+        from core.agent_router import DynamicProfile
+
+        # 先做规则提取
+        result = self.extract(text)
+        profile = result.profile
+
+        if student_memory is None:
+            return result
+
+        # 读取上一次画像
+        prev_profiles = student_memory.profile_history
+        if not prev_profiles:
+            return result
+
+        last_profile = prev_profiles[-1]
+        prev_kb = last_profile.get("knowledge_base", "junior_dev")
+
+        # ── knowledge_base 演进 ──
+        # 如果当前描述显示进步信号, 且上次是较低级别 → 升级
+        growth_signals = ["会了一点", "有基础了", "掌握了", "进步", "学会了",
+                          "更熟练", "能写", "没问题", "不再怕"]
+        has_growth = any(sig in text for sig in growth_signals)
+
+        current_kb = profile.knowledge_base
+        if has_growth and prev_kb in self.KNOWLEDGE_PROGRESSION:
+            prev_idx = self.KNOWLEDGE_PROGRESSION.index(prev_kb)
+            current_idx = self.KNOWLEDGE_PROGRESSION.index(current_kb) if current_kb in self.KNOWLEDGE_PROGRESSION else 0
+            # 至少不降级, 有进步信号时可升级
+            profile.knowledge_base = self.KNOWLEDGE_PROGRESSION[
+                max(prev_idx, min(current_idx + 1 if has_growth else current_idx, 2))
+            ]
+
+        # ── frustration_threshold 演进 ──
+        # 如果历史评分持续走高 (avg > 80) → 挫败阈值可提高
+        if student_memory.feedback_history:
+            recent_scores = [f.get("score", 0) for f in student_memory.feedback_history[-5:]]
+            avg_score = sum(recent_scores) / max(len(recent_scores), 1)
+            if avg_score >= 80 and profile.frustration_threshold == "low":
+                profile.frustration_threshold = "medium"
+
+        # ── error_prone_bias 继承 ──
+        # 如果学生有历史弱点且当前描述未提及新的错误类型 → 保留历史倾向
+        if student_memory.weak_points and len(result.raw_keywords) < 3:
+            profile.error_prone_bias = last_profile.get(
+                "error_prone_bias", profile.error_prone_bias
+            )
+
+        return ProfileExtractionResult(
+            profile=profile,
+            source="rule+memory",
+            confidence=min(result.confidence + 0.1, 1.0),
+            raw_keywords=result.raw_keywords,
+        )
 
     def extract_with_llm(
         self,

@@ -194,6 +194,7 @@ class PlannerAgent:
         profile: Any,                     # DynamicProfile
         course_id: str = "python_advanced",
         topic_filter: Optional[List[str]] = None,
+        student_memory: Any = None,       # StudentMemory (optional)
     ) -> LearningPlan:
         """
         生成个性化学习路径.
@@ -202,6 +203,7 @@ class PlannerAgent:
             profile: DynamicProfile 实例
             course_id: 课程 ID
             topic_filter: 可选话题过滤器
+            student_memory: StudentMemory (可选, 用于读取 mastery_map)
 
         Returns:
             LearningPlan
@@ -228,26 +230,56 @@ class PlannerAgent:
         knowledge = profile_dict.get("knowledge_base", "junior_dev")
         start_offset = BASE_START_OFFSET.get(knowledge, 0)
 
-        # 6. 构建节点
+        # 5b. 读取 Memory mastery_map
+        mastery = {}
+        if student_memory and hasattr(student_memory, "mastery_map"):
+            mastery = student_memory.mastery_map
+
+        # 6. 构建节点 — 受 mastery_map 影响
         nodes: List[PlanNode] = []
+        skipped_by_mastery: List[str] = []
         for i, topic in enumerate(all_topics):
             if i < start_offset and pace_adj["skip_detail_nodes"]:
-                # fast_track 模式下跳过前几个基础节点
                 continue
 
+            tid = topic["id"]
+
+            # ── mastery 影响 ──
+            topic_mastery = mastery.get(tid, -1)
+
+            # 已掌握 (≥0.8) → 跳过或极简
+            if topic_mastery >= 0.8:
+                skipped_by_mastery.append(tid)
+                continue
+
+            # 掌握中 (0.5-0.8) → 降低深度
+            depth_mod = 0
+            if 0.5 <= topic_mastery < 0.8:
+                depth_mod = -1
+            elif 0 < topic_mastery <= 0.3:
+                # 薄弱 → 增加深度和练习
+                depth_mod = 1
+
             depth = max(1, min(3,
-                topic.get("base_depth", 2) + pace_adj["depth_offset"]
+                topic.get("base_depth", 2) + pace_adj["depth_offset"] + depth_mod
             ))
+
+            # 练习量：薄弱概念加练
+            exercise_mod = 2 if 0 < topic_mastery <= 0.3 else 0
             exercise_count = max(1,
-                topic.get("exercise_count", 3) + pace_adj["exercise_offset"]
+                topic.get("exercise_count", 3) + pace_adj["exercise_offset"] + exercise_mod
             )
+
+            # 薄弱概念延长学习时间
+            time_mod = 5 if 0 < topic_mastery <= 0.3 else 0
             estimated_minutes = max(10,
                 topic.get("base_minutes", 20)
                 + pace_adj["depth_offset"] * 5
+                + time_mod
             )
 
             nodes.append(PlanNode(
-                node_id=topic["id"],
+                node_id=tid,
                 title=topic["title"],
                 core_concept=topic.get("concept", ""),
                 depth=depth,
@@ -263,6 +295,10 @@ class PlannerAgent:
 
         # 8. 生成路线推理
         rationale = self._generate_rationale(profile_dict, nodes, pace, cognitive)
+
+        # 补充 memory 跳过信息
+        if skipped_by_mastery:
+            rationale += f" | 已掌握跳过: {', '.join(skipped_by_mastery)}"
 
         # 9. 生成备选路径
         alternatives = self._generate_alternatives(profile_dict, all_topics)
