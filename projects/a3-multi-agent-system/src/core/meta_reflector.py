@@ -124,6 +124,86 @@ class MetaReflectorAgent:
         """注入 ExperienceMemoryStore 实例"""
         self._exp_store = exp_store
 
+    # ── Self-Reflection ────────────────────
+
+    def reflect(
+        self,
+        node_id: str,
+        failure_context: Dict[str, Any],
+        concept: str = "",
+        severity: str = "MEDIUM",
+    ) -> Optional["ReflectionResult"]:
+        """
+        自我反思: 分析失败根因, 生成改进策略.
+
+        Args:
+            node_id: 节点 ID
+            failure_context: {mistake, student_id, scores, attempts, profile_type}
+            concept: 关联概念
+            severity: 严重级别
+
+        Returns:
+            ReflectionResult (同时写入 ExperienceMemory)
+        """
+        from .decision_explainer import ReflectionResult
+
+        mistake = failure_context.get("mistake", failure_context.get("problem", f"Node {node_id} failure"))
+        student_id = failure_context.get("student_id", "")
+        scores = failure_context.get("scores", [])
+        attempts = failure_context.get("attempts", len(scores))
+
+        # 根因分析
+        if attempts >= 3:
+            root_cause = f"学生连续 {attempts} 次未能通过 — 存在概念误解"
+            improvement = "增加可视化讲解 + 分步拆解 + 类比引入"
+            future_strategy = f"对 {concept or node_id} 相关节点, 优先使用图解和对比示例"
+        elif attempts >= 2:
+            root_cause = "学生两次尝试失败 — 可能缺少前置知识"
+            improvement = "补充前置知识讲解 + 降低初始难度"
+            future_strategy = f"在推荐 {concept or node_id} 之前, 先检查前置概念掌握度"
+        else:
+            root_cause = "单次失败 — 可能是偶发错误"
+            improvement = "提供提示 + 允许重试"
+            future_strategy = "监控该学生后续表现"
+
+        result = ReflectionResult(
+            mistake=mistake,
+            root_cause=root_cause,
+            improvement=improvement,
+            future_strategy=future_strategy,
+            severity=severity,
+            concept=concept or node_id,
+            node_id=node_id,
+            affected_profiles=[student_id] if student_id else [],
+        )
+
+        # 写入 ExperienceMemory
+        if hasattr(self, "_exp_store") and self._exp_store:
+            try:
+                entry = result.to_experience_entry()
+                self._exp_store.add_lesson(**entry)
+            except Exception:
+                pass
+
+        return result
+
+    def recall_reflections(
+        self,
+        concept: str = "",
+        limit: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """召回历史反思记录"""
+        results = self.recall_lessons(concept, n_results=limit)
+        return [
+            {
+                "mistake": getattr(l, "problem_context", ""),
+                "root_cause": getattr(l, "root_cause_analysis", ""),
+                "improvement": getattr(l, "abstract_lint_rule", ""),
+                "severity": getattr(l, "severity", "MEDIUM"),
+            }
+            for l in results
+        ]
+
     def recall_lessons(self, query, n_results=3):
         results = self.collection.query(query_texts=[query], n_results=n_results, where={"doc_type":"failure_lessons"})
         lessons = []
