@@ -12,8 +12,11 @@ Supports:
 - Error handling with graceful degradation
 
 Configuration:
-    export XF_SPARK_API_KEY="your-api-key"
-    export XF_SPARK_BASE_URL="https://spark-api.xf-yun.com/v1"
+    export XF_API_KEY="your-api-key"           # Required (or XF_SPARK_API_KEY)
+    export XF_APP_ID="your-app-id"             # Optional (Spark 3.x compat)
+    export XF_API_SECRET="your-api-secret"     # Optional (Spark 3.x compat)
+    export XF_SPARK_BASE_URL="https://spark-api.xf-yun.com/v1"  # Optional
+    export LLM_MODEL="spark-pro"               # Optional (spark-lite|spark-pro|spark-max|spark-4.0-ultra)
 """
 
 from __future__ import annotations
@@ -75,15 +78,21 @@ class XunfeiSparkProvider(LLMProvider):
     def __init__(
         self,
         api_key: Optional[str] = None,
+        app_id: Optional[str] = None,
+        api_secret: Optional[str] = None,
         base_url: Optional[str] = None,
         model: str = "spark-pro",
     ):
+        # API key: XF_API_KEY > XF_SPARK_API_KEY > explicit
+        _key = api_key or os.getenv("XF_API_KEY") or os.getenv("XUNFEI_API_KEY") or os.getenv("XF_SPARK_API_KEY", "")
         super().__init__(
-            api_key=api_key or os.getenv("XF_SPARK_API_KEY", ""),
+            api_key=_key,
             base_url=base_url or os.getenv("XF_SPARK_BASE_URL", self.DEFAULT_BASE_URL),
-            model=model,
+            model=model or os.getenv("LLM_MODEL", "spark-pro"),
         )
-        self._model_config = SPARK_MODELS.get(model, SPARK_MODELS["spark-pro"])
+        self.app_id = app_id or os.getenv("XF_APP_ID", "")
+        self.api_secret = api_secret or os.getenv("XF_API_SECRET", "")
+        self._model_config = SPARK_MODELS.get(self.model, SPARK_MODELS["spark-pro"])
 
     def generate(
         self,

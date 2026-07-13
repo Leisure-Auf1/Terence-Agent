@@ -47,7 +47,9 @@ def create_provider(mode: str = "") -> Optional[LLMProvider]:
 
 def _create_spark_provider() -> Optional[LLMProvider]:
     """Create Xunfei Spark provider. Returns None if not configured."""
-    api_key = os.getenv("XUNFEI_API_KEY", os.getenv("XF_SPARK_API_KEY", ""))
+    api_key = (os.getenv("XF_API_KEY")
+               or os.getenv("XUNFEI_API_KEY")
+               or os.getenv("XF_SPARK_API_KEY", ""))
     if not api_key:
         # No key configured → fall back to mock with warning
         return _create_mock_provider()
@@ -121,7 +123,9 @@ def get_provider_info() -> dict:
     }
 
     if mode == "spark":
-        api_key = os.getenv("XUNFEI_API_KEY", os.getenv("XF_SPARK_API_KEY", ""))
+        api_key = (os.getenv("XF_API_KEY")
+               or os.getenv("XUNFEI_API_KEY")
+               or os.getenv("XF_SPARK_API_KEY", ""))
         if api_key:
             info["provider"] = "XunfeiSparkProvider"
             info["model"] = os.getenv("XUNFEI_MODEL", os.getenv("XF_SPARK_MODEL", "spark-pro"))
