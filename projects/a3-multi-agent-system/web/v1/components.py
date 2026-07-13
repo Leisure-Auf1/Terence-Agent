@@ -234,6 +234,7 @@ def render_multimodal_cards(
         "video":     {"icon": "🎬", "color": "#F44336", "label": "视频脚本", "preview": "场景概览"},
         "code":      {"icon": "💻", "color": "#4CAF50", "label": "代码实验", "preview": "代码预览"},
         "exercise":  {"icon": "✏️", "color": "#FF9800", "label": "练习题", "preview": "题目预览"},
+        "extended_reading": {"icon": "📖", "color": "#795548", "label": "拓展阅读", "preview": "参考文献"},
     }
 
     # Layout: 2-3 cards per row
@@ -319,6 +320,13 @@ def _render_single_multimodal_card(
                 if q.get("type"):
                     st.caption(f"类型: {q['type']}")
 
+        elif rtype == "extended_reading":
+            references = data.get("references", [])
+            st.caption(f"**{len(references)} 篇推荐阅读**")
+            for ref in references[:3]:
+                st.caption(f"📖 {ref.get('title', '')[:60]}")
+                st.caption(f"   难度: {ref.get('difficulty', 'N/A')} | 来源: {ref.get('source', '')[:40]}")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -337,3 +345,47 @@ def render_landing(st: Any) -> None:
     → ContentAgent → ReviewGate → UserSim → FeedbackLoop
     ```
     """)
+
+
+# ═══════════════════════════════════════════════════
+# Pipeline Progress (Phase 14 — EventBus-driven)
+# ═══════════════════════════════════════════════════
+
+def render_pipeline_progress(events: list, st: Any) -> None:
+    """Show real pipeline progress from EventBus timeline."""
+
+    st.header("🔄 Generation Progress")
+    st.caption("Real-time agent execution from EventBus")
+
+    if not events:
+        st.caption("(No events yet — run the pipeline first)")
+        return
+
+    pipeline_order = [
+        "ProfileAgent", "PlannerAgent",
+        "ResourceGenerationAgent", "AgentEvaluator",
+        "MetaReflector",
+    ]
+
+    completed = 0
+    for agent_name in pipeline_order:
+        matching = [e for e in events if hasattr(e, "agent") and e.agent == agent_name]
+        if matching:
+            latest = matching[-1]
+            status_icon = "✅" if getattr(latest, "status", "success") == "success" else "❌"
+            output = getattr(latest, "output_summary", "")[:80]
+            latency = getattr(latest, "duration_ms", 0)
+            st.markdown(f"{status_icon} **{agent_name}** — {output} *({latency:.0f}ms)*")
+            completed += 1
+        else:
+            st.markdown(f"⏳ {agent_name} — waiting...")
+
+    pct = completed / max(len(pipeline_order), 1)
+    st.progress(pct, text=f"{completed}/{len(pipeline_order)} agents completed")
+
+    if completed > 0:
+        total_ms = sum(
+            getattr(e, "duration_ms", 0) for e in events
+            if hasattr(e, "agent") and e.agent in pipeline_order
+        )
+        st.success(f"Pipeline complete: {completed} agents in {total_ms:.0f}ms")
