@@ -268,7 +268,7 @@ class EvaluationRunner:
             result["profile_accuracy"] = self.rule_judge.score_profile(profile_dict, case.profile)
 
             # 2. Plan
-            from core.agent_router import DynamicProfile
+            from src.core.agent_router import DynamicProfile
             plan = self.planner.plan(
                 DynamicProfile(**profile_dict),
                 course_id="python_advanced",

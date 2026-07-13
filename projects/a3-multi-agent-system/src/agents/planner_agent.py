@@ -262,8 +262,81 @@ class PlannerAgent:
     def __init__(
         self,
         knowledge_graph: Optional[Dict[str, Dict[str, Any]]] = None,
+        kb_loader: Any = None,  # CourseKnowledgeBase (optional)
     ):
         self.knowledge_graph = knowledge_graph or self.DEFAULT_KNOWLEDGE_GRAPH
+        self._kb_loader = kb_loader
+        self._kb_loaded = False
+
+    # ── Knowledge Base Integration (Phase 11.5) ─
+
+    def load_kb(
+        self,
+        kb_path: str = "",
+        force: bool = False,
+    ) -> bool:
+        """
+        Load the course knowledge base from file.
+
+        When loaded, plan() will prefer KB topics over hardcoded graph.
+        Falls back to DEFAULT_KNOWLEDGE_GRAPH if KB loading fails.
+
+        Args:
+            kb_path: Path to KB directory (auto-discovers if empty).
+            force: Force reload even if already loaded.
+
+        Returns:
+            True if KB was loaded successfully.
+        """
+        if self._kb_loaded and not force:
+            return True
+
+        try:
+            from src.core.course_kb_loader import CourseKnowledgeBase
+            self._kb_loader = CourseKnowledgeBase(kb_path) if kb_path else CourseKnowledgeBase()
+            course = self._kb_loader.load()
+            if course and course.chapters:
+                # Merge KB into knowledge_graph
+                kb_graph = self._kb_loader.to_knowledge_graph()
+                self.knowledge_graph.update(kb_graph)
+                self._kb_loaded = True
+                return True
+        except Exception:
+            pass
+        return False
+
+    @property
+    def kb_available(self) -> bool:
+        return self._kb_loaded and self._kb_loader is not None
+
+    def get_kb(self) -> Any:
+        """Get the loaded CourseKnowledgeBase (or None)."""
+        return self._kb_loader if self._kb_loaded else None
+
+    def plan_from_kb(
+        self,
+        profile: Any,
+        course_id: str = "ai_ma_101",
+        **kwargs,
+    ) -> "LearningPlan":
+        """
+        Generate a learning path from the knowledge base.
+
+        Automatically loads KB if not yet loaded.
+        Falls back to hardcoded graph if KB unavailable.
+
+        Args:
+            profile: DynamicProfile instance.
+            course_id: Course ID from KB.
+            **kwargs: Passed to plan().
+
+        Returns:
+            LearningPlan
+        """
+        if not self._kb_loaded:
+            self.load_kb()
+
+        return self.plan(profile, course_id=course_id, **kwargs)
 
     # ── 主入口 ────────────────────────────────
 
@@ -528,7 +601,7 @@ class PlannerAgent:
         为多个画像批量生成学习路径.
         用于展示 "同一课程, 不同路径" 的效果.
         """
-        from core.agent_router import DynamicProfile
+        from src.core.agent_router import DynamicProfile
 
         plans = {}
         for pdata in profiles:
