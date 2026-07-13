@@ -10,6 +10,7 @@ User Simulation Agent — Gate 3 增强: 模拟学生试读
 输出: 第一人称「沉浸式学习心智日记」(纯文本), 不输出 JSON 不输出分数.
 """
 
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -665,8 +666,8 @@ class UserSimulationAgent:
         lecture_text: str,
         exercise_text: str = "",
         api_key: Optional[str] = None,
-        base_url: str = "https://api.deepseek.com/anthropic",
-        model: str = "deepseek-v4-pro",
+        base_url: str = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com/anthropic"),
+        model: str = os.environ.get("LLM_MODEL", "spark-pro"),
     ) -> SimulationResult:
         """
         使用真实 LLM 做深度角色扮演模拟.
@@ -724,8 +725,8 @@ class UserSimulationAgent:
         system_prompt: str,
         user_prompt: str,
         api_key: Optional[str] = None,
-        base_url: str = "https://api.deepseek.com/anthropic",
-        model: str = "deepseek-v4-pro",
+        base_url: str = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com/anthropic"),
+        model: str = os.environ.get("LLM_MODEL", "spark-pro"),
     ) -> str:
         """调用 LLM API (OpenAI Chat Completions 格式)"""
         import json
@@ -797,7 +798,7 @@ if __name__ == "__main__":
     if args.llm:
         # LLM 增强模式
         import os
-        api_key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+        api_key = os.environ.get("LLM_API_KEY") or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             # 尝试从 Claude settings 读取
             try:

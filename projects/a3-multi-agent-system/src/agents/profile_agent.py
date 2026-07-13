@@ -10,6 +10,7 @@ Phase 5.1 — ProfileAgent: 学生自然语言 → DynamicProfile
 
 from __future__ import annotations
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -387,7 +388,7 @@ class ProfileAgent:
         prompt = self.LLM_PROMPT_TEMPLATE.format(student_text=text)
 
         payload = {
-            "model": "deepseek-v4-pro",
+            "model": os.environ.get("LLM_MODEL", "spark-pro"),
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.1,
         }

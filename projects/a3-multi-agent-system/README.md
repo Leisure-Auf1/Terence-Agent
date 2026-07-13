@@ -24,7 +24,7 @@ A3 is a **self-improving multi-agent system** that delivers personalized learnin
 
 | # | Requirement | Status | Implementation |
 |:--|:------------|:------:|:---------------|
-| 1 | **LLM-based** | ✅ | Xunfei Spark + DeepSeek dual-engine, LLMProvider abstraction |
+| 1 | **LLM-based** | ✅ | Xunfei Spark (primary), multi-model compatible via LLMProvider |
 | 2 | **Multi-agent collaboration** | ✅ | 12 agents, EventBus, shared Memory, DecisionExplainer |
 | 3 | **Student profile extraction** | ✅ | ProfileAgent + ConversationProfileAgent, 6-dim profiles |
 | 4 | **Personalized resources** | ✅ | ResourceGenerationAgent (5 generators) + ResourceRecommendationAgent |
@@ -42,7 +42,7 @@ A3 is a **self-improving multi-agent system** that delivers personalized learnin
 
 ## 🧠 LLM Architecture
 
-### Dual-Engine Routing
+### Multi-Model Architecture (Xunfei Spark Primary)
 
 ```
 ┌──────────────────────────────────────────┐
@@ -53,7 +53,7 @@ A3 is a **self-improving multi-agent system** that delivers personalized learnin
 │  ├─ ProfileAgent                          │
 │  └─ OnboardingAgent                       │
 │                                           │
-│  Backend (DeepSeek)                       │
+│  Backend (Core Engine)                    │
 │  ├─ SandboxValidator                      │
 │  ├─ MetaReflector                         │
 │  └─ UserSimAgent                          │
@@ -64,10 +64,10 @@ A3 is a **self-improving multi-agent system** that delivers personalized learnin
 │          LLMProvider Interface             │
 │                                           │
 │  • generate(prompt) → LLMResponse         │
-│  • XunfeiSparkProvider                     │
-│  • MockLLMProvider (testing)               │
-│  • Extensible: add any OpenAI-compatible   │
-│    provider without modifying agents       │
+│  • XunfeiSparkProvider (primary)          │
+│  • ProviderFactory (env-configurable)     │
+│  • MockLLMProvider (testing/fallback)     │
+│  • Extensible: add any model via config   │
 └──────────────────────────────────────────┘
 ```
 

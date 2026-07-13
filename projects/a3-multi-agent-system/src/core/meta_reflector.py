@@ -71,8 +71,8 @@ class _LocalMemoryStore:
 
 class MetaReflectorAgent:
     def __init__(self, db_client=None, api_key=None, base_url=None):
-        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY")
-        self.base_url = base_url or "https://api.deepseek.com/v1"
+        self.api_key = api_key or os.environ.get("LLM_API_KEY") or os.environ.get("DEEPSEEK_API_KEY", "")
+        self.base_url = base_url or os.environ.get("LLM_BASE_URL", "https://api.deepseek.com/v1")
         self.collection = db_client or _LocalMemoryStore()
 
     def distill_accident(self, node_id, accident_payload):
@@ -81,7 +81,7 @@ class MetaReflectorAgent:
 
     def _llm_distill(self, node_id, payload):
         prompt = f"Analyze failure [{node_id}]. Return JSON: error_type,problem_context,root_cause_analysis,anti_pattern_code,golden_patch_code,abstract_lint_rule\nPayload:{json.dumps(payload,ensure_ascii=False)}"
-        body = json.dumps({"model":"deepseek-v4-pro","messages":[{"role":"user","content":prompt}],"temperature":0.1,"response_format":{"type":"json_object"}}).encode()
+        body = json.dumps({"model": os.environ.get("LLM_MODEL", "spark-pro"), "messages": [{"role": "user", "content": prompt}], "temperature": 0.1, "response_format": {"type": "json_object"}}).encode()
         req = urllib.request.Request(f"{self.base_url}/chat/completions", data=body, headers={"Authorization":f"Bearer {self.api_key}","Content-Type":"application/json"}, method="POST")
         with urllib.request.urlopen(req, context=ssl.create_default_context(), timeout=60) as r:
             data = json.loads(json.loads(r.read())["choices"][0]["message"]["content"])
