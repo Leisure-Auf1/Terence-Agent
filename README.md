@@ -6,87 +6,56 @@
 
 ## Projects
 
-### [A3 — Multi-Agent Personalized Learning System](projects/A3-Multi-Agent-System/)
+### [A3 — Multi-Agent Personalized Learning System](https://github.com/Leisure-Auf1/A3-Multi-Agent-System)
 
-A research prototype exploring multi-agent collaboration for personalized learning.
+> **Research Prototype**
+
+A research prototype exploring **multi-agent collaboration for personalized learning**. Instead of a single LLM, A3 deploys a **team of 12 specialized agents** — each with a focused role — collaborating through shared memory and an EventBus.
 
 - **12 specialized agents** with EventBus-driven communication
 - **6-dimension student profiling** from natural language
 - **6 resource types**: notes, mindmaps, exercises, code labs, video scripts, extended reading
 - **Self-improvement loop**: evaluate → reflect → improve
-- **3-gate content safety**: AST static check → Pytest dynamic validation → LLM quality judge
-- **241 tests** | 13k+ Python LOC | Streamlit dashboard
+- **3-gate content safety**: AST static check → Pytest dynamic validation → LLM judge
+- **241/245 tests** | Streamlit dashboard
 
-```
-ProfileAgent → PlannerAgent → ResourceGenAgent → ResourceRecAgent
-                                       ↓
-                              EvaluationAgent → MetaReflector → ImprovementLoop
-```
-
-→ **[Project README →](projects/A3-Multi-Agent-System/)**
+→ [Repository →](https://github.com/Leisure-Auf1/A3-Multi-Agent-System)
 
 ---
 
-### [Veritas-Core — Trustworthy Agentic AI Platform](projects/Veritas-Core/)
+### [Veritas-Core — Trustworthy Agentic AI Platform](https://github.com/Leisure-Auf1/Veritas-Core)
 
-The architectural evolution from A3 toward production-grade agent infrastructure.
+> **Engineering Evolution**
+
+The architectural evolution from A3 toward **production-grade agent infrastructure** — designed for reliability, security, and observability.
 
 - **Agent Runtime State Machine** — IDLE→REASONING→PLANNING→TOOL_CALLING→VALIDATING→COMPLETED
 - **Secure EventBus** — trace_id + permission + audit per event
 - **3-Tier Memory** — Conversation(Redis) + Profile(PostgreSQL) + History(ChromaDB)
 - **Trust Layer** — Memory validation, agent permissions, injection defense
-- **Agent+Tool Architecture** — 6 cognitive agents + generator tools
-- **21/21 tests** | Phase 1 MVP
+- **Agent+Tool Architecture** — 6 cognitive agents + 5 generator tools
+- **StorageBackend Abstraction** — MemoryStorage MVP + Redis/PostgreSQL extension points
+- **44/44 tests** | Phase 1 MVP
 
-```
-ProfileAgent → KnowledgeAgent → PlannerAgent → ResourceAgent
-                                                    ↓
-                                           EvaluationAgent → ReflectionAgent
-```
-
-→ **[Project README →](projects/Veritas-Core/)**
+→ [Repository →](https://github.com/Leisure-Auf1/Veritas-Core)
 
 ---
 
 ## Project Evolution
 
 ```
-A3 Multi-Agent System (v2.8)     Veritas-Core (v1.0)
-         │                              │
-    Research Prototype          Production Architecture
-    12 agents, pipeline          6 agents + tools, state machine
-    JSON memory                  PostgreSQL + Redis + ChromaDB
-    Rule-based generation        RAG-enhanced LLM generation
-    3-Gate ReviewGate            4-Gate Trust Layer
-                                      │
-         └──────────── Evolution ──────┘
+A3-Multi-Agent-System              Veritas-Core
+        │                                │
+   Research Prototype            Production Architecture
+   12 agents, pipeline            6 agents + tools, state machine
+   JSON memory                    PostgreSQL + Redis + ChromaDB
+   Rule-based generation          RAG-enhanced LLM generation
+   3-Gate ReviewGate              4-Gate Trust Layer
+        │                                │
+        └────────── Evolution ───────────┘
 ```
 
-**A3 is the foundation. Veritas-Core is the architectural evolution.**
-
----
-
-## Repository Structure
-
-```
-Terence-Agent/
-├── README.md                          ← This file
-├── projects/
-│   ├── A3-Multi-Agent-System/         ← Research prototype
-│   │   ├── src/                       ← 12 agents, EventBus, Memory, Evaluation
-│   │   ├── tests/                     ← 241 tests
-│   │   ├── web/                       ← Streamlit dashboard
-│   │   └── docs/                      ← Architecture, competition materials
-│   │
-│   └── Veritas-Core/                  ← Production architecture
-│       ├── src/                       ← Agents, RAG, Memory, Trust, Skills
-│       ├── tests/                     ← 21 tests (Phase 1)
-│       ├── designs/veritas_core/      ← 12 design documents
-│       └── deployment/               ← Docker Compose
-│
-├── scripts/                           ← Utility scripts
-└── event-report/                      ← Development logs
-```
+**A3 is the research foundation. Veritas-Core is the engineering evolution.**
 
 ---
 
@@ -99,5 +68,30 @@ Terence-Agent/
 | Memory | JSON files | PostgreSQL + Redis + ChromaDB |
 | Communication | AgentEventBus | SecureAgentEventBus |
 | Frontend | Streamlit | Streamlit (planned: FastAPI) |
-| Testing | pytest (241) | pytest (21) |
+| Testing | pytest (241/245) | pytest (44/44) |
 | Deployment | pip install | Docker Compose (planned) |
+
+---
+
+## Repository Map
+
+```
+Leisure-Auf1/
+│
+├── Terence-Agent/                          ← This repo (portfolio hub)
+│   ├── README.md                           ← Project index & evolution story
+│   ├── scripts/                            ← Utility scripts
+│   └── event-report/                       ← Development logs
+│
+├── A3-Multi-Agent-System/                  ← Research prototype
+│   └── 12 agents, EventBus, Memory, Streamlit
+│
+└── Veritas-Core/                           ← Engineering framework
+    └── Runtime, Trust Layer, RAG, Storage
+```
+
+---
+
+## License
+
+MIT
