@@ -3,7 +3,7 @@ Phase 5 — AgentRouter: 双引擎靶向割接路由
 
 将 A3 系统接入生产级双引擎架构:
   前场 — 讯飞星火 (合规): ContentAgent / ProfileAgent / OnboardingAgent
-  后场 — 核心引擎 (DeepSeek): SandboxValidator / MetaReflector / UserSimAgent
+  后场 — 核心引擎: SandboxValidator / MetaReflector / UserSimAgent
 
 动态画像合约:
   该合约在路由层生效, 影响前场 Agent 的 System Prompt 注入,
@@ -78,7 +78,7 @@ class AgentRouter:
     双引擎路由控制器.
 
     前场 Agent (评委可见): → 讯飞星火
-    后场 Agent (后台自愈): → DeepSeek 核心引擎
+    后场 Agent (后台自愈): → 核心引擎
     """
 
     FRONTEND_AGENTS = {"ContentAgent", "ProfileAgent", "OnboardingAgent"}

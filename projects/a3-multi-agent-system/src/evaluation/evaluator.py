@@ -12,6 +12,7 @@ Phase 9 — Offline Evaluation Pipeline
 
 from __future__ import annotations
 import json
+import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -201,7 +202,7 @@ class LLMJudge:
 
         try:
             payload = {
-                "model": "deepseek-v4-pro",
+                "model": os.environ.get("LLM_MODEL", "spark-pro"),
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.1,
             }

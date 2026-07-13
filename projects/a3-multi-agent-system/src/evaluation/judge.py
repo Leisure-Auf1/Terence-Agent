@@ -10,6 +10,7 @@ Phase 12 — Judge Interface: RuleJudge + LLMJudge 统一评分接口
 
 from __future__ import annotations
 import json
+import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -243,7 +244,7 @@ class LLMJudge:
 
         try:
             payload = {
-                "model": "deepseek-v4-pro",
+                "model": os.environ.get("LLM_MODEL", "spark-pro"),
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.1,
             }

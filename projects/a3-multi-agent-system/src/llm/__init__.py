@@ -2,7 +2,7 @@
 Phase 11 — LLM Provider Abstraction Layer
 
 Provides a clean interface for LLM backends.
-Supports: real providers (Xunfei Spark, DeepSeek), mock provider for testing.
+Supports: real providers (Xunfei Spark, configurable backends), mock provider for testing.
 Does NOT break existing AgentRouter rule mode — the router delegates to providers.
 """
 
