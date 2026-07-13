@@ -113,6 +113,112 @@ class ProfileAgent:
 
     def __init__(self, default_overrides: Optional[Dict[str, str]] = None):
         self.defaults = {**self.DEFAULTS, **(default_overrides or {})}
+        self._llm_provider = None  # LLMProvider (Phase 11.5)
+
+    # ── Provider-based LLM extraction (Phase 11.5) ─
+
+    def set_llm_provider(self, provider: Any):
+        """Set the LLM provider for extract_with_provider()."""
+        self._llm_provider = provider
+
+    def extract_with_provider(
+        self,
+        text: str,
+        provider: Any = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+    ) -> "ProfileExtractionResult":
+        """
+        Extract profile using LLMProvider with rule fallback.
+
+        This is the recommended method for LLM-enabled profile extraction.
+        Uses the LLMProvider interface instead of raw AgentRouter.
+
+        Args:
+            text: Student natural language description.
+            provider: LLMProvider instance (uses self._llm_provider if not set).
+            conversation_history: Optional list of {role, content} messages.
+
+        Returns:
+            ProfileExtractionResult (source="llm" or "rule")
+        """
+        from src.core.agent_router import DynamicProfile
+
+        llm = provider or self._llm_provider
+
+        if llm is None:
+            return self.extract(text)  # Rule fallback
+
+        # Build conversation-aware prompt
+        prompt = self.LLM_PROMPT_TEMPLATE.format(
+            student_text=text,
+            history_context=self._format_conversation_history(conversation_history),
+        )
+
+        try:
+            response = llm.generate(
+                prompt=prompt,
+                system_prompt="You are a student profile analysis expert. Output ONLY valid JSON.",
+                temperature=0.1,
+                max_tokens=512,
+            )
+
+            if not response.success:
+                return self.extract(text)
+
+            content = response.content.strip()
+            # Strip markdown code fences
+            if content.startswith("```"):
+                lines = content.split("\n")
+                content = "\n".join(lines[1:]) if len(lines) > 2 else content
+                if content.endswith("```"):
+                    content = content[:-3]
+
+            data = json.loads(content)
+        except Exception:
+            return self.extract(text)
+
+        reasoning = data.pop("reasoning", "")
+
+        # Validate candidate values
+        allowed = {
+            "knowledge_base": {"junior_dev", "mid_level", "senior"},
+            "cognitive_style": {"visual_dominant", "text_linear", "auditory"},
+            "error_prone_bias": {
+                "magic_syntax_blind", "indentation_errors",
+                "variable_scoping", "type_mismatch", "import_issues",
+            },
+            "learning_pace": {"fast_track", "normal", "deep_dive"},
+            "interaction_preference": {"code_sandbox", "quiz_first", "passive_read"},
+            "frustration_threshold": {"low", "medium", "high"},
+        }
+
+        sanitized = {}
+        for key, valid_set in allowed.items():
+            value = data.get(key, self.defaults[key])
+            sanitized[key] = value if value in valid_set else self.defaults[key]
+
+        profile = DynamicProfile(**sanitized)
+
+        return ProfileExtractionResult(
+            profile=profile,
+            source="llm",
+            confidence=0.85,
+            llm_reasoning=reasoning,
+        )
+
+    @staticmethod
+    def _format_conversation_history(
+        history: Optional[List[Dict[str, str]]],
+    ) -> str:
+        """Format conversation history for prompt injection."""
+        if not history:
+            return ""
+        lines = ["\n对话历史:"]
+        for msg in history[-6:]:  # Last 6 messages
+            role = "学生" if msg.get("role") == "user" else "系统"
+            content = msg.get("content", "")[:200]
+            lines.append(f"  {role}: {content}")
+        return "\n".join(lines)
 
     # ── 规则模式 ──────────────────────────────
 
@@ -126,7 +232,7 @@ class ProfileAgent:
         Returns:
             ProfileExtractionResult (source="rule")
         """
-        from core.agent_router import DynamicProfile
+        from src.core.agent_router import DynamicProfile
 
         keywords = self._tokenize(text)
         raw_keywords = keywords.copy()
@@ -203,7 +309,7 @@ class ProfileAgent:
         Returns:
             ProfileExtractionResult
         """
-        from core.agent_router import DynamicProfile
+        from src.core.agent_router import DynamicProfile
 
         # 先做规则提取
         result = self.extract(text)
@@ -272,7 +378,7 @@ class ProfileAgent:
         Returns:
             ProfileExtractionResult (source="llm")
         """
-        from core.agent_router import DynamicProfile
+        from src.core.agent_router import DynamicProfile
 
         if router is None:
             # 无 router 时回退到规则模式

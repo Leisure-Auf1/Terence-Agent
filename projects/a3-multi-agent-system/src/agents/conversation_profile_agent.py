@@ -481,7 +481,7 @@ class ConversationProfileAgent:
             result = profile_agent.extract(facts_text)
         else:
             # 无 ProfileAgent — 直接用收集的事实构造
-            from core.agent_router import DynamicProfile
+            from src.core.agent_router import DynamicProfile
             result = type("_R", (), {
                 "profile": DynamicProfile(**{
                     dim: state.collected_facts.get(dim, "")
