@@ -28,10 +28,10 @@ from typing import Any, Dict, List
 from src.agents.profile_agent import ProfileAgent
 from src.agents.planner_agent import PlannerAgent
 from src.agents.resource_generation_agent import ResourceGenerationAgent
-from src.llm.mock_provider import MockLLMProvider
 from src.llm.provider import LLMProvider
 from src.core.course_kb_loader import CourseKnowledgeBase
 from src.core.llm_agent_adapter import LLMAgentAdapter
+from src.core.provider_factory import create_provider, get_provider_info
 
 # ──────────────────────────────────────────────
 # Page Config
@@ -53,46 +53,39 @@ st.caption("Phase 11.5: Conversation → Profile → Path → Resources")
 with st.sidebar:
     st.header("⚙️ Configuration")
 
-    use_llm = st.checkbox("Use LLM (Mock Provider)", value=True,
-                          help="When checked, uses MockLLMProvider for profile extraction. "
-                               "Uncheck for pure rule mode.")
+    llm_mode = st.selectbox(
+        "LLM Provider",
+        ["mock", "spark", "none"],
+        index=0,
+        format_func=lambda x: {"mock": "🤖 Mock (Demo)", "spark": "🚀 Xunfei Spark", "none": "📏 Rule Only"}.get(x, x),
+        help="mock = deterministic demo | spark = real Xunfei API | none = pure rule mode"
+    )
 
     use_kb = st.checkbox("Use Knowledge Base", value=True,
                           help="When checked, PlannerAgent loads paths from the file-based KB. "
                                "Uncheck for hardcoded graph.")
 
     st.divider()
-    st.caption("**Mode:** LLM-integrated demo")
-    st.caption("**KB:** knowledge_base/artificial_intelligence_multi_agent_course/")
-    st.caption("**Provider:** MockLLMProvider (deterministic)")
+    info = get_provider_info() if llm_mode != "none" else {"provider": "None (rule-only)", "model": "N/A"}
+    st.caption(f"**Provider:** {info.get('provider', 'Unknown')}")
+    st.caption(f"**Model:** {info.get('model', 'N/A')}")
+    if info.get("fallback_reason"):
+        st.warning(f"⚠️ {info['fallback_reason']}")
 
 # ──────────────────────────────────────────────
 # Initialize Agents (cached)
 # ──────────────────────────────────────────────
 
 @st.cache_resource
-def get_agents(use_llm_mode: bool, use_kb_mode: bool):
+def get_agents(llm_mode: str, use_kb_mode: bool):
     """Initialize all agents with caching."""
     agents = {}
 
     # Profile Agent
     profile_agent = ProfileAgent()
-    if use_llm_mode:
-        mock = MockLLMProvider()
-        # Pre-seed with realistic responses
-        mock.add_response(
-            "学生画像分析",
-            json.dumps({
-                "knowledge_base": "mid_level",
-                "cognitive_style": "visual_dominant",
-                "error_prone_bias": "magic_syntax_blind",
-                "learning_pace": "fast_track",
-                "interaction_preference": "code_sandbox",
-                "frustration_threshold": "medium",
-                "reasoning": "学生有编程基础，偏好视觉化学习，希望快速上手实战。"
-            }, ensure_ascii=False)
-        )
-        profile_agent.set_llm_provider(mock)
+    provider = create_provider(llm_mode)
+    if provider:
+        profile_agent.set_llm_provider(provider)
     agents["profile"] = profile_agent
 
     # Planner Agent
@@ -110,9 +103,8 @@ def get_agents(use_llm_mode: bool, use_kb_mode: bool):
     agents["resource"] = ResourceGenerationAgent()
 
     # LLM Adapter (for demo showcase)
-    if use_llm_mode:
-        mock2 = MockLLMProvider()
-        agents["adapter"] = LLMAgentAdapter(provider=mock2)
+    if provider:
+        agents["adapter"] = LLMAgentAdapter(provider=provider)
 
     return agents
 
@@ -152,7 +144,7 @@ student_text = st.text_area(
 )
 
 if st.button("🚀 Run Pipeline", type="primary", disabled=not student_text.strip()):
-    agents = get_agents(use_llm, use_kb)
+    agents = get_agents(llm_mode, use_kb)
 
     # ════════════════════════════════════════
     # Step 1: Profile Extraction
@@ -165,7 +157,7 @@ if st.button("🚀 Run Pipeline", type="primary", disabled=not student_text.stri
 
         with st.spinner("Extracting profile..."):
             t0 = time.time()
-            if use_llm:
+            if llm_mode != "none":
                 result = agents["profile"].extract_with_provider(student_text)
             else:
                 result = agents["profile"].extract(student_text)

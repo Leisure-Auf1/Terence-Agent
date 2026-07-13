@@ -494,3 +494,63 @@ def render_improvement_timeline(data: dict, st) -> None:
         🚀 STRATEGY       → 下一轮自动注入优化策略
         ```
         """)
+
+
+def render_trust_safety_panel(data: dict, st) -> None:
+    """Panel 7: Trust & Safety — grounding, evaluation, review, hallucination."""
+
+    st.header("🛡️ AI Trust & Safety")
+    st.caption("Knowledge grounding · Evaluation · Hallucination control")
+
+    grounding = data.get("grounding", {})
+    evaluation = data.get("evaluation", {})
+    review_gate = data.get("review_gate", {})
+    hallucination = data.get("hallucination", {})
+
+    # Row 1: Grounding + Evaluation
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.subheader("📚 Knowledge Grounding")
+        st.metric("Source", grounding.get("source", "KB")[:40])
+        covered = grounding.get("covered", 0)
+        total = grounding.get("total", 1)
+        st.metric("Coverage", f"{covered}/{total} concepts")
+        st.progress(
+            grounding.get("confidence", 0.92),
+            text=f"Confidence: {grounding.get('confidence', 0.92):.0%}"
+        )
+
+    with c2:
+        st.subheader("📊 Evaluation Score")
+        dims = evaluation.get("dimensions", {})
+        for dim, score in dims.items():
+            st.progress(score, text=f"{dim}: {score:.0%}")
+
+    # Row 2: ReviewGate
+    st.divider()
+    st.subheader("🚪 ReviewGate Status")
+    gates = review_gate.get("gates", [])
+    gate_cols = st.columns(len(gates) if gates else 3)
+    for i, gate in enumerate(gates):
+        with gate_cols[i]:
+            status = gate.get("status", "PASS")
+            emoji = "✅" if status == "PASS" else "❌"
+            st.markdown(f"### {emoji}")
+            st.caption(f"**Gate {i+1}:** {gate.get('name', '')}")
+            st.caption(gate.get("detail", ""))
+
+    # Row 3: Hallucination check
+    st.divider()
+    st.subheader("🔍 Hallucination Control")
+    items = hallucination.get("items", [])
+    for item in items:
+        icon = "✅" if item.get("status") == "pass" else "⚠️"
+        st.markdown(f"{icon} {item.get('text', '')}")
+
+    # Fallback status
+    fb = hallucination.get("fallback", {})
+    with st.expander("Fallback Status", expanded=False):
+        st.caption(f"Available: {fb.get('available', True)}")
+        st.caption(f"Active: {fb.get('active', False)}")
+        st.caption(f"Reason: {fb.get('reason', 'N/A')}")
