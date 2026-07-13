@@ -51,7 +51,7 @@ class PlannerAgent(BaseAgent):
 
     def execute(self, input_data: Dict[str, Any]) -> AgentOutput:
         profile: DynamicProfile = input_data.get("profile")
-        knowledge_gap: KnowledgeGap = input_data.get("knowledge_gap", KnowledgeGap())
+        knowledge_gap: KnowledgeGap = input_data.get("knowledge_gap") or KnowledgeGap()
 
         # Detect target course
         course = self._detect_course(profile.learning_goal)
