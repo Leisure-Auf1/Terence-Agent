@@ -179,6 +179,84 @@ class PlannerAgent:
                  "required": ["functions"], "base_depth": 3, "base_minutes": 25},
                   ],
         },
+        "multi_agent_ai": {
+            "title": "Multi-Agent AI 系统开发",
+            "topics": [
+                # Level 1 — LLM Fundamentals
+                {"id": "llm_basics", "title": "LLM 基础原理",
+                 "concept": "理解大语言模型的 token、context window、prompting 机制",
+                 "required": [], "base_depth": 2, "base_minutes": 20},
+                {"id": "prompt_engineering", "title": "Prompt 工程",
+                 "concept": "掌握 System Prompt、Few-shot、Chain-of-Thought 设计模式",
+                 "required": ["llm_basics"], "base_depth": 2, "base_minutes": 25},
+                {"id": "llm_interaction", "title": "模型交互与 API",
+                 "concept": "通过 API 调用 LLM，处理 streaming、rate limiting、fallback",
+                 "required": ["llm_basics"], "base_depth": 2, "base_minutes": 20},
+                # Level 2 — Agent Fundamentals
+                {"id": "agent_loop", "title": "Agent 主循环",
+                 "concept": "理解 Agent 的 observe→think→act 循环和 ReAct 模式",
+                 "required": ["prompt_engineering", "llm_interaction"], "base_depth": 2, "base_minutes": 30},
+                {"id": "tool_calling", "title": "Tool Calling 与 Function Calling",
+                 "concept": "Agent 如何调用外部工具：search、execute、read/write 模式",
+                 "required": ["agent_loop"], "base_depth": 3, "base_minutes": 30},
+                {"id": "agent_planning", "title": "Agent 规划与推理",
+                 "concept": "Task decomposition、goal tracking、Plan-and-Execute 策略",
+                 "required": ["agent_loop"], "base_depth": 3, "base_minutes": 25},
+                # Level 3 — Multi-Agent Architecture
+                {"id": "agent_roles", "title": "Agent 角色分工",
+                 "concept": "设计 Agent 角色：Planner、Executor、Reviewer、Logger 职责划分",
+                 "required": ["agent_planning", "tool_calling"], "base_depth": 3, "base_minutes": 25},
+                {"id": "agent_communication", "title": "Agent 通信模式",
+                 "concept": "EventBus 事件驱动、消息队列、共享 Memory、直接调用等通信范式",
+                 "required": ["agent_roles"], "base_depth": 3, "base_minutes": 30},
+                {"id": "task_decomposition", "title": "任务分解与协作",
+                 "concept": "大规模任务拆解为子任务、Agent 间协作调度、Orchestrator 模式",
+                 "required": ["agent_roles"], "base_depth": 3, "base_minutes": 30},
+                # Level 4 — Runtime Engineering
+                {"id": "eventbus_arch", "title": "EventBus 架构设计",
+                 "concept": "设计 Agent 事件总线：emit/sync/trace/persist 完整链路",
+                 "required": ["agent_communication"], "base_depth": 3, "base_minutes": 35},
+                {"id": "memory_management", "title": "Memory 管理",
+                 "concept": "StudentMemory + ExperienceMemory：profile mastery EMA、经验召回、JSON→Vector 迁移",
+                 "required": ["agent_communication"], "base_depth": 3, "base_minutes": 30},
+                {"id": "state_persistence", "title": "状态持久化",
+                 "concept": "Agent 会话状态存储、Trace 持久化、跨会话恢复",
+                 "required": ["eventbus_arch"], "base_depth": 2, "base_minutes": 25},
+                {"id": "trace_observability", "title": "Trace 可观测性",
+                 "concept": "AgentTraceCollector：reasoning_type 标记、latency 追踪、decision 解释",
+                 "required": ["eventbus_arch"], "base_depth": 2, "base_minutes": 25},
+                # Level 5 — Production Optimization
+                {"id": "evaluation_systems", "title": "Agent 评估体系",
+                 "concept": "4-dim 评分：correctness/personalization/explainability/efficiency — RuleJudge + LLMJudge",
+                 "required": ["trace_observability", "state_persistence"], "base_depth": 3, "base_minutes": 30},
+                {"id": "reflection_loop", "title": "反思与改进循环",
+                 "concept": "MetaReflector 根因分析 → ExperienceMemory → ImprovementLoop → 策略更新",
+                 "required": ["evaluation_systems"], "base_depth": 3, "base_minutes": 30},
+                {"id": "system_optimization", "title": "系统优化",
+                 "concept": "吞吐量调优、成本控制、Pipeline 并行化、生产部署最佳实践",
+                 "required": ["reflection_loop"], "base_depth": 2, "base_minutes": 25},
+            ],
+        },
+    }
+
+    # ── 课程自动检测关键词 ──
+    COURSE_KEYWORDS: Dict[str, List[str]] = {
+        "multi_agent_ai": [
+            "multi-agent", "multi agent", "agent system", "agent 系统",
+            "multiagent", "多智能体", "多 agent", "智能体开发",
+            "智能体", "agent开发", "agent 开发", "ai agent",
+            "llm application", "llm app", "大模型应用", "大模型开发",
+            "autonomous agent", "自主 agent", "agent architecture",
+            "agent 架构", "agent协作", "agent 协作", "agent",
+        ],
+        "python_advanced": [
+            "python", "Python", "装饰器", "闭包", "生成器",
+            "迭代器", "decorator", "closure", "generator",
+        ],
+        "python_basics": [
+            "python基础", "Python基础", "入门", "变量",
+            "函数", "循环", "条件", "列表", "字典",
+        ],
     }
 
     def __init__(
@@ -192,23 +270,29 @@ class PlannerAgent:
     def plan(
         self,
         profile: Any,                     # DynamicProfile
-        course_id: str = "python_advanced",
+        course_id: str = "",
         topic_filter: Optional[List[str]] = None,
         student_memory: Any = None,       # StudentMemory (optional)
+        goal_text: str = "",              # 学生目标文本 (用于自动检测课程)
     ) -> LearningPlan:
         """
         生成个性化学习路径.
 
         Args:
             profile: DynamicProfile 实例
-            course_id: 课程 ID
+            course_id: 课程 ID (留空时从 goal_text 自动检测, 默认 "python_advanced")
             topic_filter: 可选话题过滤器
             student_memory: StudentMemory (可选, 用于读取 mastery_map)
+            goal_text: 学生目标文本 (用于自动检测课程, 如 "学习 Multi-Agent AI")
 
         Returns:
             LearningPlan
         """
         profile_dict = profile.to_dict() if hasattr(profile, "to_dict") else profile
+
+        # 0. 课程自动检测
+        if not course_id:
+            course_id = self.detect_course(goal_text, profile_dict)
 
         # 1. 获取课程话题
         course = self.knowledge_graph.get(course_id, {})
@@ -320,6 +404,45 @@ class PlannerAgent:
                 "start_offset": start_offset,
             },
         )
+
+    # ── 课程检测 ──────────────────────────────
+
+    def detect_course(
+        self,
+        goal_text: str = "",
+        profile_dict: Optional[Dict[str, str]] = None,
+    ) -> str:
+        """
+        根据学生目标文本和画像推断最合适的课程.
+
+        检测优先级:
+          1. Multi-Agent AI 关键词
+          2. Python 高级关键词
+          3. Python 基础关键词
+          4. 默认: python_advanced
+
+        Args:
+            goal_text: 学生目标文本
+            profile_dict: 画像字典 (可选, 用于知识基础辅助判断)
+
+        Returns:
+            course_id
+        """
+        text = (goal_text or "").lower()
+
+        # 按优先级扫描
+        for course_id in ["multi_agent_ai", "python_advanced", "python_basics"]:
+            keywords = self.COURSE_KEYWORDS.get(course_id, [])
+            for kw in keywords:
+                if kw.lower() in text:
+                    return course_id
+
+        # 无匹配: 根据知识基础选默认
+        if profile_dict:
+            kb = profile_dict.get("knowledge_base", "")
+            if kb == "junior_dev":
+                return "python_basics"
+        return "python_advanced"
 
     # ── 辅助方法 ──────────────────────────────
 

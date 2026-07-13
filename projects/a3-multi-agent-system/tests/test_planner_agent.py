@@ -246,6 +246,123 @@ class TestCognitiveTeachingMap(unittest.TestCase):
             self.assertIn(style, COGNITIVE_TEACHING_MAP)
 
 
+class TestPlannerAgentMultiAgentCurriculum(unittest.TestCase):
+    """Phase 7.5: Multi-Agent AI 课程测试"""
+
+    def setUp(self):
+        self.agent = PlannerAgent()
+
+    def test_python_curriculum_unchanged(self):
+        """Case 1: Python 关键词 → Python 课程（不破坏已有行为）"""
+        profile = DynamicProfile(
+            knowledge_base="mid_level",
+            cognitive_style="visual_dominant",
+            learning_pace="normal",
+        )
+        plan = self.agent.plan(
+            profile,
+            course_id="python_advanced",
+            goal_text="我想学习Python，特别是装饰器和生成器",
+        )
+        # Python 课程节点：closures, decorators_intro, decorators_advanced, generators
+        titles = [n.title for n in plan.nodes]
+        self.assertIn("闭包与作用域", titles)
+        self.assertIn("装饰器入门", titles)
+        # 不应包含 Agent 课程节点
+        self.assertNotIn("Agent 主循环", titles)
+        self.assertNotIn("LLM 基础原理", titles)
+
+    def test_multi_agent_english_keywords(self):
+        """Case 2: English multi-agent keywords → Multi-Agent 课程"""
+        profile = DynamicProfile()
+        plan = self.agent.plan(
+            profile,
+            course_id="",
+            goal_text="I want to learn Multi-Agent AI system development",
+        )
+        titles = [n.title for n in plan.nodes]
+        self.assertIn("LLM 基础原理", titles)
+        self.assertIn("Agent 主循环", titles)
+        self.assertIn("Agent 角色分工", titles)
+        self.assertIn("Agent 通信模式", titles)
+        # 不应包含 Python 课程节点
+        self.assertNotIn("闭包与作用域", titles)
+        self.assertNotIn("装饰器入门", titles)
+
+    def test_multi_agent_chinese_keywords(self):
+        """Case 3: Chinese 智能体 keywords → Multi-Agent 课程"""
+        profile = DynamicProfile()
+        plan = self.agent.plan(
+            profile,
+            course_id="",
+            goal_text="学习智能体开发，掌握大模型应用",
+        )
+        titles = [n.title for n in plan.nodes]
+        self.assertIn("LLM 基础原理", titles)
+        self.assertIn("Agent 主循环", titles)
+        self.assertIn("EventBus 架构设计", titles)
+        self.assertIn("反思与改进循环", titles)
+        # 不应包含 Python 课程节点
+        self.assertNotIn("生成器与迭代器", titles)
+
+    def test_python_agent_hybrid_falls_to_agent(self):
+        """Case 4: Python + Agent 混合 → Agent 课程 (Agent 优先级高于 Python)"""
+        profile = DynamicProfile()
+        plan = self.agent.plan(
+            profile,
+            course_id="",
+            goal_text="Python + Agent应用开发",
+        )
+        titles = [n.title for n in plan.nodes]
+        # "agent" 关键词触发 multi_agent_ai
+        self.assertIn("Agent 主循环", titles)
+        self.assertIn("Agent 规划与推理", titles)
+
+    def test_multi_agent_course_has_all_levels(self):
+        """验证 Multi-Agent 课程包含所有 5 个级别"""
+        profile = DynamicProfile(learning_pace="normal")
+        plan = self.agent.plan(
+            profile,
+            course_id="multi_agent_ai",
+        )
+        titles = set(n.title for n in plan.nodes)
+        # Level 1: LLM Fundamentals
+        self.assertIn("LLM 基础原理", titles)
+        self.assertIn("Prompt 工程", titles)
+        # Level 2: Agent Fundamentals
+        self.assertIn("Agent 主循环", titles)
+        self.assertIn("Tool Calling 与 Function Calling", titles)
+        # Level 3: Multi-Agent Architecture
+        self.assertIn("Agent 角色分工", titles)
+        self.assertIn("Agent 通信模式", titles)
+        self.assertIn("任务分解与协作", titles)
+        # Level 4: Runtime Engineering
+        self.assertIn("EventBus 架构设计", titles)
+        self.assertIn("Memory 管理", titles)
+        self.assertIn("Trace 可观测性", titles)
+        # Level 5: Production Optimization
+        self.assertIn("Agent 评估体系", titles)
+        self.assertIn("反思与改进循环", titles)
+        self.assertIn("系统优化", titles)
+        # 应包含所有 16 个节点 (junior_dev + normal pace)
+        self.assertEqual(len(plan.nodes), 16)
+
+    def test_detect_course_python_unchanged(self):
+        """detect_course: Python 文本 → python_advanced"""
+        result = self.agent.detect_course("学习Python装饰器和闭包")
+        self.assertEqual(result, "python_advanced")
+
+    def test_detect_course_multi_agent(self):
+        """detect_course: Multi-Agent 文本 → multi_agent_ai"""
+        result = self.agent.detect_course("我想学多智能体系统")
+        self.assertEqual(result, "multi_agent_ai")
+
+    def test_detect_course_default(self):
+        """detect_course: 无关键词 → python_advanced (default)"""
+        result = self.agent.detect_course("想学编程", {"knowledge_base": "mid_level"})
+        self.assertEqual(result, "python_advanced")
+
+
 class TestIntegrationProfilePlanner(unittest.TestCase):
     """集成测试: ProfileAgent → PlannerAgent 端到端"""
 
