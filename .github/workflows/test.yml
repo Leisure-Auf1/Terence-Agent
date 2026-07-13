@@ -1,0 +1,42 @@
+name: Test A3 + Veritas-Core
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-a3:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/A3-Multi-Agent-System
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+
+  test-veritas:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/Veritas-Core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: PYTHONPATH=src:$PYTHONPATH python -m pytest tests/ -v --tb=short

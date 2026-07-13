@@ -1,6 +1,8 @@
 # Python cache
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
 
 # OS files
 .DS_Store
@@ -14,4 +16,4 @@ Thumbs.db
 
 # Nested project repos (各自独立管理)
 projects/campus-task/
-projects/a3-multi-agent-system/storage/
+projects/A3-Multi-Agent-System/storage/
