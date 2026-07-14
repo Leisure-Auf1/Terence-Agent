@@ -4,6 +4,17 @@
 
 ---
 
+## 🔗 Project Navigation
+
+This repository is the portfolio hub. The actual projects live in their own repositories:
+
+| Role | Repository | Status |
+|:-----|:-----------|:------:|
+| 🧪 Research Foundation | [A3-Multi-Agent-System](https://github.com/Leisure-Auf1/A3-Multi-Agent-System) | 241/245 tests |
+| 🏗️ Engineering Evolution | [Veritas-Core](https://github.com/Leisure-Auf1/Veritas-Core) | 44/44 tests |
+
+---
+
 ## Projects
 
 ### [A3 — Multi-Agent Personalized Learning System](https://github.com/Leisure-Auf1/A3-Multi-Agent-System)
@@ -44,18 +55,20 @@ The architectural evolution from A3 toward **production-grade agent infrastructu
 ## Project Evolution
 
 ```
-A3-Multi-Agent-System              Veritas-Core
-        │                                │
-   Research Prototype            Production Architecture
-   12 agents, pipeline            6 agents + tools, state machine
-   JSON memory                    PostgreSQL + Redis + ChromaDB
-   Rule-based generation          RAG-enhanced LLM generation
-   3-Gate ReviewGate              4-Gate Trust Layer
-        │                                │
-        └────────── Evolution ───────────┘
+A3-Multi-Agent-System
+        │
+        │  Research Foundation
+        │  Multi-agent experimentation
+        │  Prototype validation
+        ↓
+Veritas-Core
+        │
+        │  Engineering Evolution
+        │  Production-oriented Agent Infrastructure
+        │  Runtime + Trust + Memory
 ```
 
-**A3 is the research foundation. Veritas-Core is the engineering evolution.**
+**A3 is the research foundation. Veritas-Core is the architectural evolution — not a replacement, but a continuation into production-grade engineering.**
 
 ---
 
