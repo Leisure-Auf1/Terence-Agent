@@ -145,6 +145,41 @@ This repository is the entry point for all AI agent engineering work. Start here
 
 ---
 
+## Demo Showcase
+
+| Project | Demos |
+|:--------|:------|
+| [A3-Multi-Agent-System](https://github.com/Leisure-Auf1/A3-Multi-Agent-System) | [4 demo scripts](https://github.com/Leisure-Auf1/A3-Multi-Agent-System/tree/main/examples) — learning flow, multimodal generation, tutor chat, evaluation loop |
+| [Veritas-Core](https://github.com/Leisure-Auf1/Veritas-Core) | [3 quickstart examples](https://github.com/Leisure-Auf1/Veritas-Core/tree/main/examples) — SDK client, engine runtime, memory management |
+
+## Project Timeline
+
+```
+2026 Q2  — A3 Research Prototype
+               │  12 agents, 283 tests, monorepo
+               │  Phase 1–6: runtime, recovery, plugins, SDK
+               │
+2026 Jul  — Veritas-Core Extraction (Phase 7.0)
+               │  Framework separated via git filter-branch
+               │  A3 → Application | Veritas-Core → Framework
+               │  558 + 1015 = 1573 tests total
+               │
+2026 Jul  — A3 Productization (Phase 9.1–9.5)
+               │  Auth + SQLite, TutorAgent, EvaluationAgent
+               │  Multimodal Gateway (7 resource types)
+               │  Product API v2 (20 endpoints)
+               │  1130 tests
+               │
+2026 Jul  — Public Release Preparation (Phase 9.6–9.7)
+               │  README rewrites, demo showcase
+               │  Veritas-Core quickstart examples
+               │  Portfolio documentation
+               │
+           ──→ Future: Open Source Release
+```
+
+---
+
 ## License
 
 MIT
