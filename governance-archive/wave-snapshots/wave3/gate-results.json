@@ -1,0 +1,42 @@
+{
+  "gates": [
+    {
+      "id": "G1",
+      "name": "Metadata completeness",
+      "passed": true,
+      "detail": "149/148 version, 149/148 owner, 149/148 lifecycle, 149/148 status"
+    },
+    {
+      "id": "G2",
+      "name": "Namespace consistency",
+      "passed": true,
+      "detail": "0 mismatches"
+    },
+    {
+      "id": "G3",
+      "name": "Ownership correctness",
+      "passed": true,
+      "detail": "0 wrong"
+    },
+    {
+      "id": "G4",
+      "name": "Registry v1.1 compatibility",
+      "passed": true,
+      "detail": "11 entries (unchanged)"
+    },
+    {
+      "id": "G5",
+      "name": "Runtime safety",
+      "passed": true,
+      "detail": "Session active, skills accessible"
+    },
+    {
+      "id": "G6",
+      "name": "Rollback verification",
+      "passed": true,
+      "detail": "Backup ready for restore"
+    }
+  ],
+  "passed": 6,
+  "failed": 0
+}

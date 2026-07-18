@@ -1,0 +1,1645 @@
+{
+  "version": "1.0",
+  "generated": "2026-07-18",
+  "schema_version": "1.1",
+  "total_skills": 148,
+  "core_count": 14,
+  "adapter_count": 122,
+  "project_count": 12,
+  "registry_fields": 17,
+  "new_fields": [
+    "namespace",
+    "scope",
+    "ownership"
+  ],
+  "skills": [
+    {
+      "name": "cli-anything",
+      "category": "cli-anything",
+      "namespace": "adapter.cli.anything",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "multi-gate-review-loop",
+      "category": "multi-gate-review-loop",
+      "namespace": "adapter.multi.gate.review.loop",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "powerpoint",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "airtable",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "notion",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "nano-pdf",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "maps",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "linear",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "docx-editing",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "petdex",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "chaoxing-homework",
+      "category": "productivity",
+      "namespace": "project.ucampus.chaoxing",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "ucampus-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "wps-office-cn-install",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "teams-meeting-pipeline",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "ocr-and-documents",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "google-workspace",
+      "category": "productivity",
+      "namespace": "adapter.productivity",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "notebooklm",
+      "category": "notebooklm",
+      "namespace": "adapter.notebooklm",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "acp-coding-agent",
+      "category": "autonomous-ai-agents",
+      "namespace": "project.a3.coding",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "a3-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "kanban-codex-lane",
+      "category": "autonomous-ai-agents",
+      "namespace": "project.a3.kanban",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "a3-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "a3-multi-agent-pipeline",
+      "category": "autonomous-ai-agents",
+      "namespace": "project.a3.workflow",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "a3-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "hermes-agent",
+      "category": "autonomous-ai-agents",
+      "namespace": "adapter.autonomous.ai.agents",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "sketch",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "p5js",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "ascii-video",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "baoyu-infographic",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "design-md",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "creative-ideation",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "comfyui",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "touchdesigner-mcp",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "pixel-art",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "songwriting-and-ai-music",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "manim-video",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "claude-design",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "baoyu-comic",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "architecture-diagram",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "excalidraw",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "baoyu-article-illustrator",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "pretext",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "ascii-art",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "popular-web-designs",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "humanizer",
+      "category": "creative",
+      "namespace": "adapter.creative",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "remotion",
+      "category": "remotion",
+      "namespace": "adapter.remotion",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "apikey-image-gen",
+      "category": "apikey-image-gen",
+      "namespace": "adapter.apikey.image.gen",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "a3-content-pipeline",
+      "category": "software-development",
+      "namespace": "project.a3.pipeline",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "a3-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "plan",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "spike",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "ai-project-environment-setup",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "debugging-hermes-tui-commands",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "lab-report-execution",
+      "category": "software-development",
+      "namespace": "project.ucampus.lab",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "ucampus-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "node-inspect-debugger",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "a3-agent-team-pipeline",
+      "category": "software-development",
+      "namespace": "project.a3.workflow",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "a3-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "veritas-core",
+      "category": "software-development",
+      "namespace": "project.veritas.core",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "veritas-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "a3-multi-agent-content-pipeline",
+      "category": "software-development",
+      "namespace": "project.a3.workflow",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "a3-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "hermes-agent-skill-authoring",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "ai-content-generation-pipeline",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "writing-plans",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "python-debugpy",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "a3-runtime-infrastructure",
+      "category": "software-development",
+      "namespace": "project.a3.infrastructure",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "a3-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "simplify-code",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "requesting-code-review",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "systematic-debugging",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "hermes-s6-container-supervision",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "test-driven-development",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "content-review-gate",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "architecture-rfc-design",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "subagent-driven-development",
+      "category": "software-development",
+      "namespace": "adapter.software.development",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "yuanbao",
+      "category": "yuanbao",
+      "namespace": "adapter.yuanbao",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "content-review-pipeline",
+      "category": "content-review-pipeline",
+      "namespace": "adapter.content.review.pipeline",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "native-mcp",
+      "category": "mcp",
+      "namespace": "adapter.mcp",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "layer4-screenshot-vision",
+      "category": "browser-automation",
+      "namespace": "adapter.browser.automation",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "browser-automation",
+      "category": "browser-automation",
+      "namespace": "adapter.browser.automation",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "layer1-playwright",
+      "category": "browser-automation",
+      "namespace": "adapter.browser.automation",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "computer-use-mcp",
+      "category": "browser-automation",
+      "namespace": "adapter.browser.automation",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "layer3-browser-use",
+      "category": "browser-automation",
+      "namespace": "adapter.browser.automation",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "layer2-cdp-harness",
+      "category": "browser-automation",
+      "namespace": "adapter.browser.automation",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "computer-use",
+      "category": "computer-use",
+      "namespace": "adapter.computer.use",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "himalaya",
+      "category": "email",
+      "namespace": "adapter.email",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "arxiv",
+      "category": "research",
+      "namespace": "adapter.research",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "academic-writing",
+      "category": "research",
+      "namespace": "adapter.research",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "paper-report-writing",
+      "category": "research",
+      "namespace": "adapter.research",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "polymarket",
+      "category": "research",
+      "namespace": "adapter.research",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "llm-wiki",
+      "category": "research",
+      "namespace": "adapter.research",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "research-paper-writing",
+      "category": "research",
+      "namespace": "adapter.research",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "blogwatcher",
+      "category": "research",
+      "namespace": "adapter.research",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "dogfood",
+      "category": "dogfood",
+      "namespace": "adapter.dogfood",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "xurl",
+      "category": "social-media",
+      "namespace": "adapter.social.media",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "grok-image-to-video",
+      "category": "grok-image-to-video",
+      "namespace": "adapter.grok.image.to.video",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "youtube-content",
+      "category": "media",
+      "namespace": "adapter.media",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "gif-search",
+      "category": "media",
+      "namespace": "adapter.media",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "spotify",
+      "category": "media",
+      "namespace": "adapter.media",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "songsee",
+      "category": "media",
+      "namespace": "adapter.media",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "heartmula",
+      "category": "media",
+      "namespace": "adapter.media",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "linux-desktop-customization",
+      "category": "devops",
+      "namespace": "adapter.devops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "kanban-orchestrator",
+      "category": "devops",
+      "namespace": "adapter.devops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "agent-governance-protocol",
+      "category": "devops",
+      "namespace": "hermes.core.governance",
+      "scope": "core",
+      "ownership": {
+        "tier": 0,
+        "owner": "hermes-governance",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "webhook-subscriptions",
+      "category": "devops",
+      "namespace": "hermes.core.webhooks",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "architecture-constraints",
+      "category": "devops",
+      "namespace": "hermes.core.constraints",
+      "scope": "core",
+      "ownership": {
+        "tier": 0,
+        "owner": "hermes-governance",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "harness-preflight",
+      "category": "devops",
+      "namespace": "hermes.core.preflight",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "agent-logger",
+      "category": "devops",
+      "namespace": "hermes.core.logger",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "streamlit-deployment",
+      "category": "devops",
+      "namespace": "adapter.devops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "linux-grub-dual-boot",
+      "category": "devops",
+      "namespace": "adapter.devops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "error-registry",
+      "category": "devops",
+      "namespace": "hermes.core.errors",
+      "scope": "core",
+      "ownership": {
+        "tier": 0,
+        "owner": "hermes-governance",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "arch-linux-disk-cleanup",
+      "category": "devops",
+      "namespace": "adapter.devops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "review-gate-pipeline",
+      "category": "devops",
+      "namespace": "adapter.devops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "skill-ecosystem-audit",
+      "category": "devops",
+      "namespace": "hermes.core.auditor",
+      "scope": "core",
+      "ownership": {
+        "tier": 0,
+        "owner": "hermes-governance",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "agent-debugger",
+      "category": "devops",
+      "namespace": "hermes.core.debugger",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "kanban-worker",
+      "category": "devops",
+      "namespace": "adapter.devops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "multi-agent-content-pipeline",
+      "category": "devops",
+      "namespace": "adapter.devops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "agent-executor",
+      "category": "devops",
+      "namespace": "hermes.core.executor",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "agent-developer",
+      "category": "devops",
+      "namespace": "hermes.core.developer",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "skill-manager",
+      "category": "devops",
+      "namespace": "hermes.core.registry",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "guidance-agent",
+      "category": "devops",
+      "namespace": "hermes.core.guidance",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "task-progress",
+      "category": "devops",
+      "namespace": "hermes.core.tracker",
+      "scope": "core",
+      "ownership": {
+        "tier": 0,
+        "owner": "hermes-governance",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "coding-agent-orchestration",
+      "category": "devops",
+      "namespace": "hermes.core.coding",
+      "scope": "core",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "hermes.core"
+      }
+    },
+    {
+      "name": "findmy",
+      "category": "apple",
+      "namespace": "adapter.apple",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "imessage",
+      "category": "apple",
+      "namespace": "adapter.apple",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "apple-reminders",
+      "category": "apple",
+      "namespace": "adapter.apple",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "macos-computer-use",
+      "category": "apple",
+      "namespace": "adapter.apple",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "apple-notes",
+      "category": "apple",
+      "namespace": "adapter.apple",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "minecraft-modpack-server",
+      "category": "gaming",
+      "namespace": "adapter.gaming",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "pokemon-player",
+      "category": "gaming",
+      "namespace": "adapter.gaming",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "jupyter-live-kernel",
+      "category": "data-science",
+      "namespace": "adapter.data.science",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "cli-anything-hermes",
+      "category": "cli-anything-hermes",
+      "namespace": "adapter.cli.anything.hermes",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "grub-dual-boot",
+      "category": ".archive",
+      "namespace": "adapter..archive",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "obsidian",
+      "category": "note-taking",
+      "namespace": "adapter.note.taking",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "hyperframes",
+      "category": "hyperframes",
+      "namespace": "adapter.hyperframes",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "edu-content-pipeline",
+      "category": "edu-content-pipeline",
+      "namespace": "adapter.edu.content.pipeline",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "godmode",
+      "category": "red-teaming",
+      "namespace": "adapter.red.teaming",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "cli-hub-meta-skill",
+      "category": "cli-hub-meta-skill",
+      "namespace": "adapter.cli.hub.meta.skill",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "ucampus-auto-complete",
+      "category": "u-campus",
+      "namespace": "project.ucampus.automation",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "ucampus-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "github-auth",
+      "category": "github",
+      "namespace": "adapter.github",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "github-pr-workflow",
+      "category": "github",
+      "namespace": "adapter.github",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "monorepo-split",
+      "category": "github",
+      "namespace": "adapter.github",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "codebase-inspection",
+      "category": "github",
+      "namespace": "adapter.github",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "github-issues",
+      "category": "github",
+      "namespace": "adapter.github",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "github-code-review",
+      "category": "github",
+      "namespace": "adapter.github",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "github-repo-management",
+      "category": "github",
+      "namespace": "adapter.github",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "markdown-viewer",
+      "category": "markdown-viewer",
+      "namespace": "adapter.markdown.viewer",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "huggingface-hub",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "vllm",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "llama-cpp",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "obliteratus",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "dspy",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "lm-evaluation-harness",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "weights-and-biases",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "audiocraft",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "segment-anything",
+      "category": "mlops",
+      "namespace": "adapter.mlops",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    },
+    {
+      "name": "u-campus-course-automation",
+      "category": "u-campus-course-automation",
+      "namespace": "project.ucampus.course",
+      "scope": "project",
+      "ownership": {
+        "tier": 2,
+        "owner": "ucampus-team",
+        "namespace": "project"
+      }
+    },
+    {
+      "name": "openhue",
+      "category": "smart-home",
+      "namespace": "adapter.smart.home",
+      "scope": "adapter",
+      "ownership": {
+        "tier": 1,
+        "owner": "hermes-platform",
+        "namespace": "adapter"
+      }
+    }
+  ]
+}

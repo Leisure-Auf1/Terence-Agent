@@ -1,0 +1,141 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-06-05",
+  "skills": [
+    {
+      "name": "skill-manager",
+      "category": "devops",
+      "tags": ["core", "router", "orchestrator"],
+      "mount": "always",
+      "description": "技能管理器 — 任务入口路由",
+      "trigger": ["*"]
+    },
+    {
+      "name": "architecture-constraints",
+      "category": "devops",
+      "tags": ["core", "governance"],
+      "mount": "always",
+      "description": "架构约束 — 层级/级联/复盘",
+      "trigger": ["*"]
+    },
+    {
+      "name": "error-registry",
+      "category": "devops",
+      "tags": ["core", "errors"],
+      "mount": "always",
+      "description": "报错表 — 所有已知错误及修复",
+      "trigger": ["*"]
+    },
+    {
+      "name": "task-progress",
+      "category": "devops",
+      "tags": ["core", "progress"],
+      "mount": "auto",
+      "description": "进度追踪 — 跨会话恢复",
+      "trigger": ["complex", "multi-step"]
+    },
+    {
+      "name": "browser-automation",
+      "category": "browser-automation",
+      "tags": ["umbrella"],
+      "mount": "routed",
+      "description": "浏览器自动化伞技能",
+      "trigger": ["webpage", "browser", "login", "crawl", "form"]
+    },
+    {
+      "name": "layer1-playwright",
+      "category": "browser-automation",
+      "tags": ["playwright", "dom"],
+      "mount": "routed",
+      "description": "Playwright DOM 自动化",
+      "trigger": ["standard-dom"],
+      "parent": "browser-automation"
+    },
+    {
+      "name": "layer2-cdp-harness",
+      "category": "browser-automation",
+      "tags": ["cdp", "react"],
+      "mount": "routed",
+      "description": "CDP 连接 + bhts",
+      "trigger": ["react-spa", "login-session"],
+      "parent": "browser-automation"
+    },
+    {
+      "name": "layer3-browser-use",
+      "category": "browser-automation",
+      "tags": ["ai", "agent"],
+      "mount": "routed",
+      "description": "AI 驱动浏览器自动化",
+      "trigger": ["complex-page", "dynamic-content"],
+      "parent": "browser-automation"
+    },
+    {
+      "name": "layer4-screenshot-vision",
+      "category": "browser-automation",
+      "tags": ["vision", "screenshot"],
+      "mount": "routed",
+      "description": "截图视觉流 — 终极方案",
+      "trigger": ["captcha", "canvas", "no-dom"],
+      "parent": "browser-automation"
+    },
+    {
+      "name": "computer-use-mcp",
+      "category": "browser-automation",
+      "tags": ["desktop", "mcp"],
+      "mount": "routed",
+      "description": "GitHub 桌面操控 MCP 服务器",
+      "trigger": ["desktop", "mouse", "screenshot-os", "keyboard"]
+    },
+    {
+      "name": "cli-anything",
+      "category": "browser-automation",
+      "tags": ["cli", "harness"],
+      "mount": "routed",
+      "description": "CLI-Anything 集成",
+      "trigger": ["software-cli", "gui-automation"]
+    },
+    {
+      "name": "cli-anything-hermes",
+      "tags": ["harness", "builder"],
+      "mount": "routed",
+      "description": "Harness 构建器",
+      "trigger": ["build-harness", "wrap-software"]
+    },
+    {
+      "name": "cli-hub-meta-skill",
+      "tags": ["discovery"],
+      "mount": "routed",
+      "description": "CLI-Hub 浏览/安装",
+      "trigger": ["search-cli", "install-cli"]
+    },
+    {
+      "name": "ucampus-auto-complete",
+      "category": "u-campus",
+      "tags": ["u-campus"],
+      "mount": "routed",
+      "description": "U校园 自动答题",
+      "trigger": ["uai.unipus", "ucampus", "读写教程", "英语"]
+    },
+    {
+      "name": "u-campus-course-automation",
+      "category": "u-campus-course-automation",
+      "tags": ["u-campus"],
+      "mount": "routed",
+      "description": "U校园 全流程指南",
+      "trigger": ["uai.unipus", "ucampus"],
+      "fallback": "ucampus-auto-complete"
+    }
+  ],
+  "mount_strategies": {
+    "always": "每次对话自动加载",
+    "auto": "复杂/多步任务自动加载",
+    "routed": "只有匹配 trigger 时加载"
+  },
+  "forbidden_pairs": [
+    {"task": "browser", "forbidden": ["computer-use-mcp", "cli-anything"]},
+    {"task": "desktop", "forbidden": ["browser-automation", "cli-anything"]},
+    {"task": "cli-wrap", "forbidden": ["browser-automation", "computer-use-mcp"]},
+    {"task": "coding", "forbidden": ["browser-automation", "computer-use-mcp", "cli-anything"]},
+    {"task": "u-campus", "forbidden": ["computer-use-mcp", "cli-anything"]}
+  ]
+}
