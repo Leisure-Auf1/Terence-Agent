@@ -26,6 +26,7 @@ related_skills: [architecture-constraints, task-progress, event-report]
 | 码 | 触发 | 根因 | 修复 | 替代方案 |
 |:---|:-----|:-----|:-----|:---------|
 | `BH_STUB` | `from browser_harness import Harness` | PyPI 包是空包 | `connect_over_cdp` 或 `bhts` | ✅ |
+| `KERNEL_DUAL_STORE` | `approval_manager.approve/reject` 返回 `Proposal not found` | Kernel B.6.4 缺陷: approval_manager 读 `approvals/*.json`, proposal_store 读 `proposals.jsonl`, 两存储不联通; 且 reject 返回 error 时不抛异常, 静默失败 | 状态变更统一用 `proposal_store.update_status(id, status)` (权威存储), **必须检查返回值** `r.get('updated')` | ✅ |
 | `BH_NO_CLI` | `which browser-harness` | 无 entry point | 用 `bhts` 代替 | ✅ |
 | `PW_DEPS_FAIL` | `playwright install --with-deps` | Arch 非官方 + 需 sudo | 只用 `install chromium` | ✅ |
 | `VISION_NO_IMG` | `browser_vision()` 截图分析失败 | 当前模型不支持 `image_url` | 改用 `browser_console` eval JS | ✅ |
