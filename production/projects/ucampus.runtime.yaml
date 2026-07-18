@@ -1,0 +1,41 @@
+# Phase P.0.3 — UCampus · Production Runtime Config
+# Governance: Constitution v1.0 · Registry v1.1 · C.3 namespace model
+project:
+  id: ucampus
+  name: UCampus Course Automation
+  namespace: project.ucampus.*
+  tier: 2
+  owner: project-team
+  repo: ~/Terence-Agent/projects/ucampus
+
+kernel_attach:
+  registry: ~/.hermes/skills/devops/skill-manager/references/skill-registry.json
+  caller_scope: project
+  caller_tier: 2
+  allowed_dependencies:
+    - hermes.core.*
+    - adapter.*          # browser-automation 等适配层
+  forbidden_dependencies:
+    - project.a3.*
+    - project.veritas.*
+
+skills:
+  # Registry v1.1 中 project.ucampus.* 命名空间的 4 个技能
+  - ucampus-auto-complete       # project.ucampus.automation
+  - u-campus-course-automation  # project.ucampus.course
+  - chaoxing-homework           # project.ucampus.chaoxing
+  - lab-report-execution        # project.ucampus.lab
+
+workflows:
+  course-task-automation:
+    description: 课程任务自动化 (登录 → 任务识别 → 答题 → 提交)
+    entry_skill: ucampus-auto-complete
+    mount: routed
+    timeout_ms: 300000
+    telemetry: required
+    pii_policy: strict   # 🔴 账号凭据不落任何持久化文件
+
+monitoring:
+  health_check: daily
+  degraded_action: proposal
+  quarantine_auto: true

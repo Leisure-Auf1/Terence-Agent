@@ -1,0 +1,43 @@
+# Phase P.0.3 — A3 Multi-Agent System · Production Runtime Config
+# Governance: Constitution v1.0 · Registry v1.1 · C.3 namespace model
+project:
+  id: a3
+  name: A3 Multi-Agent System
+  namespace: project.a3.*
+  tier: 2
+  owner: project-team
+  repo: ~/A3-Multi-Agent-System
+
+kernel_attach:
+  registry: ~/.hermes/skills/devops/skill-manager/references/skill-registry.json
+  caller_scope: project
+  caller_tier: 2
+  allowed_dependencies:
+    - hermes.core.*      # Project → Core ✅
+    - adapter.*          # Project → Adapter ✅
+  forbidden_dependencies:
+    - project.veritas.*  # 跨项目需 cross_project:true + justification
+    - project.ucampus.*
+
+skills:
+  # Registry v1.1 中 project.a3.* 命名空间的 7 个技能
+  - a3-multi-agent-pipeline          # project.a3.workflow
+  - a3-agent-team-pipeline           # project.a3.workflow
+  - a3-multi-agent-content-pipeline  # project.a3.workflow
+  - a3-content-pipeline              # project.a3.pipeline
+  - a3-runtime-infrastructure        # project.a3.infrastructure
+  - acp-coding-agent                 # project.a3.coding
+  - kanban-codex-lane                # project.a3.kanban
+
+workflows:
+  content-generation:
+    description: 教学内容生成管线 (blueprint → generate → review gate → hotfix)
+    entry_skill: a3-multi-agent-pipeline
+    mount: routed
+    timeout_ms: 300000
+    telemetry: required
+
+monitoring:
+  health_check: daily          # 随 production-daily.sh
+  degraded_action: proposal    # 降级 → 治理提案 (P1-P8)
+  quarantine_auto: true

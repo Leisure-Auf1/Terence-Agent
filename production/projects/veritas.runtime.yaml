@@ -1,0 +1,36 @@
+# Phase P.0.3 — Veritas-Core · Production Runtime Config
+# Governance: Constitution v1.0 · Registry v1.1 · C.3 namespace model
+project:
+  id: veritas
+  name: Veritas-Core
+  namespace: project.veritas.*
+  tier: 2
+  owner: project-team
+  repo: ~/Veritas-Core
+
+kernel_attach:
+  registry: ~/.hermes/skills/devops/skill-manager/references/skill-registry.json
+  caller_scope: project
+  caller_tier: 2
+  allowed_dependencies:
+    - hermes.core.*
+    - adapter.*
+  forbidden_dependencies:
+    - project.a3.*
+    - project.ucampus.*
+
+skills:
+  - veritas-core
+
+workflows:
+  structured-test-run:
+    description: 结构化测试运行 (pytest + review gate)
+    entry_skill: veritas-core
+    mount: routed
+    timeout_ms: 300000
+    telemetry: required
+
+monitoring:
+  health_check: daily
+  degraded_action: proposal
+  quarantine_auto: true
