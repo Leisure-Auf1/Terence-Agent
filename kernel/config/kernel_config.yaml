@@ -1,0 +1,84 @@
+kernel:
+  version: 0.1.0
+  phase: B.6.0 — Skeleton
+  log_level: INFO
+resolver:
+  enabled: false
+  match_strategy: trigger_first
+  fallback_enabled: true
+  max_candidates: 10
+lifecycle:
+  enabled: false
+  state_machine: 13_state
+  transition_logging: true
+  duration_limits:
+    loading_max_s: 5
+    context_ready_max_s: 30
+    executing_max_s: 300
+    recovery_max_s: 60
+context:
+  enabled: false
+  max_concurrent: 5
+  stale_timeout_s: 30
+  sha256_verification: true
+executor:
+  enabled: false
+  default_timeout_ms: 300000
+  max_retries: 3
+  retry_backoff:
+  - 1
+  - 2
+  - 4
+  fallback_enabled: true
+telemetry:
+  enabled: true
+  retention_days: 90
+  archive_days: 365
+  metrics_update_interval_s: 300
+health:
+  enabled: true
+  evaluation_interval_s: 300
+  degradation_grace_period_s: 7200
+  quarantine_auto: true
+  factors:
+    success_rate_weight: 35
+    failure_frequency_weight: 25
+    latency_weight: 15
+    dependency_weight: 15
+    trend_weight: 10
+governance:
+  enabled: true
+  auto_proposals: true
+  proposal_types:
+  - P1
+  - P2
+  - P3
+  - P4
+  - P5
+  - P6
+  - P7
+  - P8
+  require_approval: true
+security:
+  enabled: true
+  namespace_enforcement: true
+  sha256_verification: true
+  permission_gates:
+  - G1
+  - G2
+  - G3
+  - G4
+  - G5
+  - G6
+  audit_enabled: true
+  rollback_enabled: true
+audit:
+  enabled: true
+  state_changes: true
+  permission_denials: true
+  health_events: true
+compatibility:
+  registry_v1_1: true
+  namespace_model_c3: true
+  runtime_contract_b5: true
+  governance_constitution_v1_0: true

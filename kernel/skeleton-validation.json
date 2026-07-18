@@ -1,0 +1,43 @@
+{
+  "total": 6,
+  "passed": 6,
+  "failed": 0,
+  "results": [
+    {
+      "id": "K0-001",
+      "name": "Directory Integrity",
+      "passed": true,
+      "detail": "8/8 dirs exist"
+    },
+    {
+      "id": "K0-002",
+      "name": "Manifest Validity",
+      "passed": true,
+      "detail": "v1.0.0, 8 modules, compat: registry_v1.1+namespace_C3+runtime_B5"
+    },
+    {
+      "id": "K0-003",
+      "name": "Runtime Storage Integrity",
+      "passed": true,
+      "detail": "6/6 dirs"
+    },
+    {
+      "id": "K0-004",
+      "name": "Registry Unchanged",
+      "passed": true,
+      "detail": "149 entries, schema v1.1"
+    },
+    {
+      "id": "K0-005",
+      "name": "Namespace Compatibility",
+      "passed": true,
+      "detail": "C3 model + Registry v1.1 confirmed"
+    },
+    {
+      "id": "K0-006",
+      "name": "Rollback Safety",
+      "passed": true,
+      "detail": "Skeleton has 0 .py files \u2014 trivially rollback-safe"
+    }
+  ]
+}

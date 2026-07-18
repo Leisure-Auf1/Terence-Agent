@@ -1,0 +1,38 @@
+{
+  "name": "daily-production-report",
+  "description": "每日生产报告 workflow — Hermes OS 自托管生产例程：仓库审计 → Registry 完整性 → 日报生成",
+  "version": "1.0.0",
+  "caller_tier": 1,
+  "caller_scope": "adapter",
+  "governance": {
+    "constitution": "v1.0",
+    "registry": "v1.1",
+    "telemetry": "required"
+  },
+  "steps": [
+    {
+      "name": "repo-state-audit",
+      "skill": "harness-preflight",
+      "intent": "preflight 检查仓库状态 harness 预检 框架",
+      "action": "cd ~/Terence-Agent && echo \"branch=$(git rev-parse --abbrev-ref HEAD) sha=$(git rev-parse --short HEAD) dirty=$(git status --porcelain | wc -l)\"",
+      "timeout_s": 60,
+      "critical": true
+    },
+    {
+      "name": "registry-integrity-check",
+      "skill": "skill-manager",
+      "intent": "技能注册表 registry 完整性校验 skill 管理",
+      "action": "python3 -c \"import json; d=json.load(open('/home/Terence/.hermes/skills/devops/skill-manager/references/skill-registry.json')); assert d['version']=='1.1.0' and len(d['skills'])==149 and len(d['forbidden_pairs'])==5, 'registry invalid'; print('registry v1.1 OK — 149 entries, forbidden_pairs=5')\"",
+      "timeout_s": 60,
+      "critical": true
+    },
+    {
+      "name": "daily-report-generation",
+      "skill": "task-progress",
+      "intent": "任务进度 日报 报告生成 progress 记录",
+      "action": "python3 scripts/production_daily.py",
+      "timeout_s": 120,
+      "critical": true
+    }
+  ]
+}

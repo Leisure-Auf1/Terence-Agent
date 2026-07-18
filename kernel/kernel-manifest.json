@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+  "kernel_version": "0.1.0",
+  "schema_version": "1.1",
+  "phase": "B.6.0 \u2014 Kernel Skeleton",
+  "created_at": "2026-07-18T08:45:00Z",
+  "compatibility": {
+    "registry": "v1.1",
+    "namespace_model": "C3",
+    "runtime_contract": "B5",
+    "governance_constitution": "v1.0"
+  },
+  "modules": {
+    "resolver": {
+      "version": "0.1.0",
+      "status": "skeleton",
+      "files": [
+        "capability_resolver",
+        "namespace_resolver",
+        "ownership_validator",
+        "dependency_validator"
+      ]
+    },
+    "lifecycle": {
+      "version": "0.1.0",
+      "status": "skeleton",
+      "files": [
+        "state_machine",
+        "transition_guard",
+        "state_logger"
+      ]
+    },
+    "runtime": {
+      "version": "0.1.0",
+      "status": "skeleton",
+      "files": [
+        "context_manager",
+        "executor",
+        "permission_gate",
+        "rollback_manager"
+      ]
+    },
+    "telemetry": {
+      "version": "0.1.0",
+      "status": "skeleton",
+      "files": [
+        "collector",
+        "event_store",
+        "metrics_aggregator"
+      ]
+    },
+    "health": {
+      "version": "0.1.0",
+      "status": "skeleton",
+      "files": [
+        "health_engine",
+        "degradation_manager",
+        "quarantine_manager"
+      ]
+    },
+    "governance": {
+      "version": "0.1.0",
+      "status": "skeleton",
+      "files": [
+        "proposal_engine",
+        "proposal_store"
+      ]
+    },
+    "audit": {
+      "version": "0.1.0",
+      "status": "skeleton",
+      "files": [
+        "audit_logger",
+        "audit_query"
+      ]
+    },
+    "config": {
+      "version": "0.1.0",
+      "status": "skeleton",
+      "files": [
+        "kernel_config.yaml"
+      ]
+    }
+  },
+  "runtime_storage": {
+    "path": "/home/Terence/.hermes/runtime",
+    "directories": [
+      "state",
+      "executions",
+      "telemetry",
+      "health",
+      "proposals",
+      "audit"
+    ]
+  }
+}

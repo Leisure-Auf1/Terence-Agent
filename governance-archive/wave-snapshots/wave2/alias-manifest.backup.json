@@ -1,0 +1,72 @@
+{
+  "aliases": [
+    {
+      "old_name": "a3-agent-team-pipeline",
+      "canonical": "a3-multi-agent-pipeline",
+      "namespace": "project.a3.workflow",
+      "scope": "project",
+      "lifecycle": "deprecated",
+      "status": "grace_period",
+      "replaced_by": "project.a3.workflow/a3-multi-agent-pipeline",
+      "deprecated_date": "2026-07-18",
+      "grace_period_ends": "2026-08-01"
+    },
+    {
+      "old_name": "a3-multi-agent-content-pipeline",
+      "canonical": "a3-multi-agent-pipeline",
+      "namespace": "project.a3.workflow",
+      "scope": "project",
+      "lifecycle": "deprecated",
+      "status": "grace_period",
+      "replaced_by": "project.a3.workflow/a3-multi-agent-pipeline",
+      "deprecated_date": "2026-07-18",
+      "grace_period_ends": "2026-08-01"
+    },
+    {
+      "old_name": "content-review-gate",
+      "canonical": "content-review-pipeline",
+      "namespace": "adapter.review.pipeline",
+      "scope": "adapter",
+      "lifecycle": "deprecated",
+      "status": "grace_period",
+      "replaced_by": "adapter.review.pipeline/content-review-pipeline",
+      "deprecated_date": "2026-07-18",
+      "grace_period_ends": "2026-08-01"
+    },
+    {
+      "old_name": "review-gate-pipeline",
+      "canonical": "content-review-pipeline",
+      "namespace": "adapter.review.pipeline",
+      "scope": "adapter",
+      "lifecycle": "deprecated",
+      "status": "grace_period",
+      "replaced_by": "adapter.review.pipeline/content-review-pipeline",
+      "deprecated_date": "2026-07-18",
+      "grace_period_ends": "2026-08-01"
+    },
+    {
+      "old_name": "paper-report-writing",
+      "canonical": "academic-writing",
+      "namespace": "adapter.writing.academic",
+      "scope": "adapter",
+      "lifecycle": "deprecated",
+      "status": "grace_period",
+      "replaced_by": "adapter.writing.academic/academic-writing",
+      "deprecated_date": "2026-07-18",
+      "grace_period_ends": "2026-08-01"
+    },
+    {
+      "old_name": "research-paper-writing",
+      "canonical": "academic-writing",
+      "namespace": "adapter.writing.academic",
+      "scope": "adapter",
+      "lifecycle": "deprecated",
+      "status": "grace_period",
+      "replaced_by": "adapter.writing.academic/academic-writing",
+      "deprecated_date": "2026-07-18",
+      "grace_period_ends": "2026-08-01"
+    }
+  ],
+  "created": "2026-07-18",
+  "grace_period_ends": "2026-08-01"
+}
