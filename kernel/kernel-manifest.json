@@ -48,7 +48,8 @@
         "event_store",
         "metrics_aggregator",
         "progress_tracker",
-        "progress_watchdog"
+        "progress_watchdog",
+        "progress_cli"
       ]
     },
     "health": {

@@ -75,5 +75,27 @@ qdir = os.path.join(RUNTIME, "health", "quarantine")
 qn = len(os.listdir(qdir)) if os.path.isdir(qdir) else 0
 print(f"  隔离区: {qn} 条记录" + (" ✅" if qn == 0 else " ⚠️"))
 
+# ── 长任务进度 (HPP W2) ──
+print("\n─── ⏳ 长任务进度 (HPP) ───")
+from telemetry.progress_tracker import list_snapshots, _parse_iso
+from telemetry import progress_watchdog
+
+wd_summary = progress_watchdog.scan()  # supervisory tick: escalates stale heartbeats
+active = list_snapshots(active_only=True)
+if not active:
+    print("  (无进行中的长任务)")
+for s in active:
+    icon = {"RUNNING": "🔄", "WARNING": "💛", "PENDING": "⏸"}.get(s["status"], "❓")
+    pct = f"{s['progress_pct']:.0f}%" if s.get("progress_pct") is not None else "n/a"
+    spd = s.get("speed") or {}
+    spd_s = f"{spd.get('value')}{spd.get('unit','')}" if spd else "-"
+    eta = s.get("eta") or {}
+    eta_s = f"{eta.get('seconds')}s" if eta.get("seconds") is not None else "-"
+    hb_age = int(time.time() - _parse_iso(s["last_heartbeat"]))
+    print(f"  {icon} {s['execution_id']:34s} {s['task_kind']:14s} "
+          f"{pct:>5s}  spd={spd_s:12s} eta={eta_s:8s} hb={hb_age}s前  [{s['stage']}] {s['current_operation'][:40]}")
+if wd_summary["warned"] or wd_summary["blocked"]:
+    print(f"  ⚠️ watchdog: warned={wd_summary['warned']} blocked={wd_summary['blocked']}")
+
 print(f"\n══ Monitor 完成 — {today} ══")
 PYEOF
