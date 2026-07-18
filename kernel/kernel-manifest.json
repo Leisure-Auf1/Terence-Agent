@@ -5,7 +5,7 @@
   "phase": "B.6.0 \u2014 Kernel Skeleton",
   "created_at": "2026-07-18T08:45:00Z",
   "compatibility": {
-    "registry": "v1.1",
+    "registry": "v1.2",
     "namespace_model": "C3",
     "runtime_contract": "B5",
     "governance_constitution": "v1.0"

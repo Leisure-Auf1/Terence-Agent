@@ -63,7 +63,7 @@ def check_kernel_boot():
     try:
         m = json.load(open(manifest))
         record("Kernel Boot", "kernel-manifest.json",
-               m.get("compatibility", {}).get("registry") == "v1.1",
+               m.get("compatibility", {}).get("registry") == "v1.2",
                f"kernel {m.get('kernel_version')}")
     except Exception as e:
         record("Kernel Boot", "kernel-manifest.json", False, str(e))
@@ -76,8 +76,8 @@ def check_registry():
     try:
         d = json.load(open(DEPLOYED_REG))
         n = len(d.get("skills", []))
-        ok &= record("Registry", "deployed v1.1 loads",
-                     d.get("version") == "1.1.0" and n == 149,
+        ok &= record("Registry", "deployed v1.2 loads",
+                     d.get("version") == "1.2.0" and n == 149,
                      f"version={d.get('version')} entries={n}")
         ok &= record("Registry", "forbidden_pairs intact",
                      len(d.get("forbidden_pairs", [])) == 5)
