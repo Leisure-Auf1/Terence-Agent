@@ -8,6 +8,7 @@
          R2 长期未用 (90d+ 或从未) 且非 core → P3 ARCHIVE_CANDIDATE (每轮限量)
          R3 deprecated 但仍被使用       → P4 MERGE_REVIEW (提醒迁移到 canonical)
          R4 kernel 执行失败率 >20%      → P2 HEALTH_REVIEW
+         R5 deprecated 且宽限期已过     → P3 ARCHIVE_CANDIDATE (P4 批准后的后续流程)
   输出:  ~/.hermes/runtime/governance/proposals/proposals.jsonl (status=pending)
          production/analytics/optimization-YYYY-MM-DD.md
 
@@ -36,6 +37,21 @@ from telemetry.event_store import query_events  # noqa: E402
 
 P3_BATCH_LIMIT = 5
 IDLE_DAYS_THRESHOLD = 90
+ALIAS_MANIFEST = os.path.join(REPO, "governance-archive", "wave-snapshots",
+                              "wave1", "alias-manifest.json")
+
+
+def grace_expired_aliases():
+    """R5 数据源: Wave 1 alias manifest 中宽限期已过的 deprecated 技能。
+    P4 批准后的既定路线 — 宽限期 (grace_period_ends) 过后自动进入归档候选。"""
+    if not os.path.exists(ALIAS_MANIFEST):
+        return []
+    today = time.strftime("%Y-%m-%d")
+    out = []
+    for a in json.load(open(ALIAS_MANIFEST)).get("aliases", []):
+        if a.get("grace_period_ends", "9999-12-31") < today:
+            out.append(a)
+    return out
 
 
 def latest_usage_report():
@@ -54,8 +70,14 @@ def pending_index():
 def ever_proposed_index():
     """历史索引: {(skill_id, type)} 曾出现过的提案（含 approved/rejected）。
     用于 R2/R3 — 人已裁决过的归档/迁移候选不反复重提；
-    R1/R4 健康类不用此索引（新降级应可再触发）。"""
-    return {(p.get("skill_id"), p.get("type")) for p in list_all()}
+    R1/R4 健康类不用此索引（新降级应可再触发）。
+    排除: 系统撤回的记录 (rejection_reason 含 '撤回') — 撤回≠人工裁决。"""
+    out = set()
+    for p in list_all():
+        if p.get("status") == "rejected" and "撤回" in (p.get("rejection_reason") or ""):
+            continue
+        out.add((p.get("skill_id"), p.get("type")))
+    return out
 
 
 def main():
@@ -133,6 +155,21 @@ def main():
                 "view_count": p["view_count"], "days_idle": p["days_idle"]},
                dedupe_history=True)
         if created and created[-1]["skill_id"] == p["name"]:
+            p3_count += 1
+
+    # ── R5: deprecated 且宽限期已过 → P3 (P4 批准后的既定后续) ──
+    # 与 R2 共享 P3 队列限额; 不受 dedupe_history 影响的是新过期项,
+    # 但同一技能已裁决过 P3 则不重提 (dedupe_history=True)。
+    for a in grace_expired_aliases():
+        if p3_count >= P3_BATCH_LIMIT:
+            break
+        sid = a["old_name"]
+        submit(sid, "P3",
+               f"宽限期 {a.get('grace_period_ends')} 已过, deprecated→归档 (R5, canonical={a.get('canonical')})",
+               {"rule": "R5", "canonical": a.get("canonical"),
+                "grace_period_ends": a.get("grace_period_ends")},
+               dedupe_history=True)
+        if created and created[-1]["skill_id"] == sid:
             p3_count += 1
 
     # ── 报告 ──
