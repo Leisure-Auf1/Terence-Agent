@@ -46,7 +46,9 @@
       "files": [
         "collector",
         "event_store",
-        "metrics_aggregator"
+        "metrics_aggregator",
+        "progress_tracker",
+        "progress_watchdog"
       ]
     },
     "health": {
@@ -82,12 +84,17 @@
       ]
     }
   },
+  "capabilities": [
+    "hermes.core.telemetry.progress"
+  ],
   "runtime_storage": {
     "path": "/home/Terence/.hermes/runtime",
     "directories": [
       "state",
       "executions",
       "telemetry",
+      "telemetry/progress",
+      "telemetry/progress-events",
       "health",
       "proposals",
       "audit"
