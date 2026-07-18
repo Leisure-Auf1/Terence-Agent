@@ -1,10 +1,10 @@
 {
   "date": "2026-07-18",
-  "generated_at": "2026-07-18T11:01:08Z",
+  "generated_at": "2026-07-18T11:06:12Z",
   "sources": {
     "registry_entries": 149,
     "platform_usage_entries": 128,
-    "kernel_telemetry_events": 9
+    "kernel_telemetry_events": 15
   },
   "summary": {
     "total_skills": 149,
@@ -17,12 +17,12 @@
       "project": {
         "n": 12,
         "active": 11,
-        "activity": 259
+        "activity": 262
       },
       "core": {
         "n": 14,
         "active": 12,
-        "activity": 213
+        "activity": 216
       },
       "adapter": {
         "n": 123,
@@ -43,8 +43,8 @@
       "name": "harness-preflight",
       "namespace": "hermes.core.preflight",
       "use_count": 57,
-      "kernel_exec_count": 2,
-      "total_activity": 59
+      "kernel_exec_count": 3,
+      "total_activity": 60
     },
     {
       "name": "guidance-agent",
@@ -54,18 +54,18 @@
       "total_activity": 55
     },
     {
+      "name": "veritas-core",
+      "namespace": "project.veritas.core",
+      "use_count": 50,
+      "kernel_exec_count": 2,
+      "total_activity": 52
+    },
+    {
       "name": "linux-desktop-customization",
       "namespace": "adapter.devops",
       "use_count": 52,
       "kernel_exec_count": 0,
       "total_activity": 52
-    },
-    {
-      "name": "veritas-core",
-      "namespace": "project.veritas.core",
-      "use_count": 50,
-      "kernel_exec_count": 1,
-      "total_activity": 51
     },
     {
       "name": "u-campus-course-automation",
@@ -78,8 +78,8 @@
       "name": "ucampus-auto-complete",
       "namespace": "project.ucampus.automation",
       "use_count": 36,
-      "kernel_exec_count": 1,
-      "total_activity": 37
+      "kernel_exec_count": 2,
+      "total_activity": 38
     },
     {
       "name": "agent-governance-protocol",
@@ -202,12 +202,12 @@
       "days_idle": 34
     },
     {
-      "name": "agent-debugger",
-      "days_idle": 34
-    },
-    {
       "name": "skill-manager",
       "days_idle": 43
+    },
+    {
+      "name": "agent-debugger",
+      "days_idle": 34
     },
     {
       "name": "subagent-driven-development",
@@ -271,11 +271,11 @@
       "last_used_at": "2026-07-18T09:50:58.187715+00:00",
       "days_idle": 0,
       "platform_state": "active",
-      "kernel_exec_count": 2,
-      "kernel_success": 2,
+      "kernel_exec_count": 3,
+      "kernel_success": 3,
       "kernel_failed": 0,
-      "kernel_last_exec": "2026-07-18T10:13:36Z",
-      "total_activity": 59
+      "kernel_last_exec": "2026-07-18T11:06:04Z",
+      "total_activity": 60
     },
     {
       "name": "guidance-agent",
@@ -297,6 +297,25 @@
       "total_activity": 55
     },
     {
+      "name": "veritas-core",
+      "namespace": "project.veritas.core",
+      "scope": "project",
+      "lifecycle": "active",
+      "status": "ok",
+      "owner": "veritas-team",
+      "use_count": 50,
+      "view_count": 50,
+      "patch_count": 106,
+      "last_used_at": "2026-07-17T16:48:02.738361+00:00",
+      "days_idle": 0,
+      "platform_state": "active",
+      "kernel_exec_count": 2,
+      "kernel_success": 2,
+      "kernel_failed": 0,
+      "kernel_last_exec": "2026-07-18T11:06:05Z",
+      "total_activity": 52
+    },
+    {
       "name": "linux-desktop-customization",
       "namespace": "adapter.devops",
       "scope": "adapter",
@@ -314,25 +333,6 @@
       "kernel_failed": 0,
       "kernel_last_exec": null,
       "total_activity": 52
-    },
-    {
-      "name": "veritas-core",
-      "namespace": "project.veritas.core",
-      "scope": "project",
-      "lifecycle": "active",
-      "status": "ok",
-      "owner": "veritas-team",
-      "use_count": 50,
-      "view_count": 50,
-      "patch_count": 106,
-      "last_used_at": "2026-07-17T16:48:02.738361+00:00",
-      "days_idle": 0,
-      "platform_state": "active",
-      "kernel_exec_count": 1,
-      "kernel_success": 1,
-      "kernel_failed": 0,
-      "kernel_last_exec": "2026-07-18T11:00:07Z",
-      "total_activity": 51
     },
     {
       "name": "u-campus-course-automation",
@@ -366,11 +366,11 @@
       "last_used_at": "2026-06-29T18:46:51.462093+00:00",
       "days_idle": 18,
       "platform_state": "active",
-      "kernel_exec_count": 1,
-      "kernel_success": 1,
+      "kernel_exec_count": 2,
+      "kernel_success": 2,
       "kernel_failed": 0,
-      "kernel_last_exec": "2026-07-18T11:00:08Z",
-      "total_activity": 37
+      "kernel_last_exec": "2026-07-18T11:06:12Z",
+      "total_activity": 38
     },
     {
       "name": "agent-governance-protocol",
@@ -563,6 +563,25 @@
       "total_activity": 11
     },
     {
+      "name": "task-progress",
+      "namespace": "hermes.core.tracker",
+      "scope": "core",
+      "lifecycle": "active",
+      "status": "ok",
+      "owner": "hermes-governance",
+      "use_count": 6,
+      "view_count": 6,
+      "patch_count": 6,
+      "last_used_at": "2026-07-18T06:35:40.563422+00:00",
+      "days_idle": 0,
+      "platform_state": "active",
+      "kernel_exec_count": 3,
+      "kernel_success": 3,
+      "kernel_failed": 0,
+      "kernel_last_exec": "2026-07-18T11:06:04Z",
+      "total_activity": 9
+    },
+    {
       "name": "review-gate-pipeline",
       "namespace": "adapter.devops",
       "scope": "adapter",
@@ -579,25 +598,6 @@
       "kernel_success": 0,
       "kernel_failed": 0,
       "kernel_last_exec": null,
-      "total_activity": 8
-    },
-    {
-      "name": "task-progress",
-      "namespace": "hermes.core.tracker",
-      "scope": "core",
-      "lifecycle": "active",
-      "status": "ok",
-      "owner": "hermes-governance",
-      "use_count": 6,
-      "view_count": 6,
-      "patch_count": 6,
-      "last_used_at": "2026-07-18T06:35:40.563422+00:00",
-      "days_idle": 0,
-      "platform_state": "active",
-      "kernel_exec_count": 2,
-      "kernel_success": 2,
-      "kernel_failed": 0,
-      "kernel_last_exec": "2026-07-18T10:13:37Z",
       "total_activity": 8
     },
     {
@@ -630,7 +630,7 @@
       "view_count": 7,
       "patch_count": 8,
       "last_used_at": "2026-07-12T11:03:43.216071+00:00",
-      "days_idle": 5,
+      "days_idle": 6,
       "platform_state": "active",
       "kernel_exec_count": 0,
       "kernel_success": 0,
@@ -734,6 +734,25 @@
       "total_activity": 5
     },
     {
+      "name": "skill-manager",
+      "namespace": "hermes.core.registry",
+      "scope": "core",
+      "lifecycle": "active",
+      "status": "ok",
+      "owner": "hermes-platform",
+      "use_count": 2,
+      "view_count": 2,
+      "patch_count": 7,
+      "last_used_at": "2026-06-05T04:13:03.587348+00:00",
+      "days_idle": 43,
+      "platform_state": "active",
+      "kernel_exec_count": 3,
+      "kernel_success": 3,
+      "kernel_failed": 0,
+      "kernel_last_exec": "2026-07-18T11:06:04Z",
+      "total_activity": 5
+    },
+    {
       "name": "a3-agent-team-pipeline",
       "namespace": "project.a3.workflow",
       "scope": "project",
@@ -750,6 +769,25 @@
       "kernel_success": 0,
       "kernel_failed": 0,
       "kernel_last_exec": null,
+      "total_activity": 4
+    },
+    {
+      "name": "a3-runtime-infrastructure",
+      "namespace": "project.a3.infrastructure",
+      "scope": "project",
+      "lifecycle": "active",
+      "status": "ok",
+      "owner": "a3-team",
+      "use_count": 2,
+      "view_count": 2,
+      "patch_count": 2,
+      "last_used_at": "2026-07-17T00:21:32.282982+00:00",
+      "days_idle": 1,
+      "platform_state": "active",
+      "kernel_exec_count": 2,
+      "kernel_success": 2,
+      "kernel_failed": 0,
+      "kernel_last_exec": "2026-07-18T11:06:12Z",
       "total_activity": 4
     },
     {
@@ -791,25 +829,6 @@
       "total_activity": 4
     },
     {
-      "name": "skill-manager",
-      "namespace": "hermes.core.registry",
-      "scope": "core",
-      "lifecycle": "active",
-      "status": "ok",
-      "owner": "hermes-platform",
-      "use_count": 2,
-      "view_count": 2,
-      "patch_count": 7,
-      "last_used_at": "2026-06-05T04:13:03.587348+00:00",
-      "days_idle": 43,
-      "platform_state": "active",
-      "kernel_exec_count": 2,
-      "kernel_success": 2,
-      "kernel_failed": 0,
-      "kernel_last_exec": "2026-07-18T10:13:36Z",
-      "total_activity": 4
-    },
-    {
       "name": "github-auth",
       "namespace": "adapter.github",
       "scope": "adapter",
@@ -845,25 +864,6 @@
       "kernel_success": 0,
       "kernel_failed": 0,
       "kernel_last_exec": null,
-      "total_activity": 3
-    },
-    {
-      "name": "a3-runtime-infrastructure",
-      "namespace": "project.a3.infrastructure",
-      "scope": "project",
-      "lifecycle": "active",
-      "status": "ok",
-      "owner": "a3-team",
-      "use_count": 2,
-      "view_count": 2,
-      "patch_count": 2,
-      "last_used_at": "2026-07-17T00:21:32.282982+00:00",
-      "days_idle": 1,
-      "platform_state": "active",
-      "kernel_exec_count": 1,
-      "kernel_success": 1,
-      "kernel_failed": 0,
-      "kernel_last_exec": "2026-07-18T11:00:18Z",
       "total_activity": 3
     },
     {
@@ -1048,7 +1048,7 @@
       "view_count": 2,
       "patch_count": 4,
       "last_used_at": "2026-07-12T11:03:33.070436+00:00",
-      "days_idle": 5,
+      "days_idle": 6,
       "platform_state": "active",
       "kernel_exec_count": 0,
       "kernel_success": 0,

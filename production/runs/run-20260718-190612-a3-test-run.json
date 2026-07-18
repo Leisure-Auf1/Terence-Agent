@@ -1,0 +1,22 @@
+{
+  "run_id": "run-20260718-190612",
+  "workflow": "a3-test-run",
+  "verdict": "SUCCESS",
+  "steps_total": 1,
+  "steps_success": 1,
+  "elapsed_ms": 6928,
+  "timestamp": "2026-07-18T11:06:12Z",
+  "results": [
+    {
+      "step": "a3-unit-tests",
+      "status": "SUCCESS",
+      "execution_id": "exec-1784372765976",
+      "skill_id": "a3-runtime-infrastructure",
+      "duration_ms": 6925,
+      "health": {
+        "state": "HEALTHY",
+        "score": 93
+      }
+    }
+  ]
+}
