@@ -1,10 +1,10 @@
 {
   "date": "2026-07-18",
-  "generated_at": "2026-07-18T11:06:12Z",
+  "generated_at": "2026-07-18T11:08:53Z",
   "sources": {
     "registry_entries": 149,
     "platform_usage_entries": 128,
-    "kernel_telemetry_events": 15
+    "kernel_telemetry_events": 17
   },
   "summary": {
     "total_skills": 149,
@@ -17,7 +17,7 @@
       "project": {
         "n": 12,
         "active": 11,
-        "activity": 262
+        "activity": 264
       },
       "core": {
         "n": 14,
@@ -57,8 +57,8 @@
       "name": "veritas-core",
       "namespace": "project.veritas.core",
       "use_count": 50,
-      "kernel_exec_count": 2,
-      "total_activity": 52
+      "kernel_exec_count": 3,
+      "total_activity": 53
     },
     {
       "name": "linux-desktop-customization",
@@ -78,8 +78,8 @@
       "name": "ucampus-auto-complete",
       "namespace": "project.ucampus.automation",
       "use_count": 36,
-      "kernel_exec_count": 2,
-      "total_activity": 38
+      "kernel_exec_count": 3,
+      "total_activity": 39
     },
     {
       "name": "agent-governance-protocol",
@@ -309,11 +309,11 @@
       "last_used_at": "2026-07-17T16:48:02.738361+00:00",
       "days_idle": 0,
       "platform_state": "active",
-      "kernel_exec_count": 2,
-      "kernel_success": 2,
+      "kernel_exec_count": 3,
+      "kernel_success": 3,
       "kernel_failed": 0,
-      "kernel_last_exec": "2026-07-18T11:06:05Z",
-      "total_activity": 52
+      "kernel_last_exec": "2026-07-18T11:08:52Z",
+      "total_activity": 53
     },
     {
       "name": "linux-desktop-customization",
@@ -366,11 +366,11 @@
       "last_used_at": "2026-06-29T18:46:51.462093+00:00",
       "days_idle": 18,
       "platform_state": "active",
-      "kernel_exec_count": 2,
-      "kernel_success": 2,
+      "kernel_exec_count": 3,
+      "kernel_success": 3,
       "kernel_failed": 0,
-      "kernel_last_exec": "2026-07-18T11:06:12Z",
-      "total_activity": 38
+      "kernel_last_exec": "2026-07-18T11:08:52Z",
+      "total_activity": 39
     },
     {
       "name": "agent-governance-protocol",

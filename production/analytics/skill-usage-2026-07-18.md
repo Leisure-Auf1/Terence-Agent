@@ -1,6 +1,6 @@
 # Skill Usage Report — 2026-07-18
 
-**数据源:** Registry 149 条 · 平台统计 128 条 · Kernel 遥测 15 事件
+**数据源:** Registry 149 条 · 平台统计 128 条 · Kernel 遥测 17 事件
 
 | 指标 | 值 |
 |:--|:--|
@@ -16,7 +16,7 @@
 |:--|--:|--:|--:|
 | adapter | 123 | 43 | 207 |
 | core | 14 | 12 | 216 |
-| project | 12 | 11 | 262 |
+| project | 12 | 11 | 264 |
 
 ## Top 10 使用最多
 
@@ -25,10 +25,10 @@
 | 1 | a3-multi-agent-pipeline | project.a3.workflow | 72 | 0 | 72 |
 | 2 | harness-preflight | hermes.core.preflight | 57 | 3 | 60 |
 | 3 | guidance-agent | hermes.core.guidance | 55 | 0 | 55 |
-| 4 | veritas-core | project.veritas.core | 50 | 2 | 52 |
+| 4 | veritas-core | project.veritas.core | 50 | 3 | 53 |
 | 5 | linux-desktop-customization | adapter.devops | 52 | 0 | 52 |
 | 6 | u-campus-course-automation | project.ucampus.course | 45 | 0 | 45 |
-| 7 | ucampus-auto-complete | project.ucampus.automation | 36 | 2 | 38 |
+| 7 | ucampus-auto-complete | project.ucampus.automation | 36 | 3 | 39 |
 | 8 | agent-governance-protocol | hermes.core.governance | 24 | 0 | 24 |
 | 9 | a3-content-pipeline | project.a3.pipeline | 20 | 0 | 20 |
 | 10 | docx-editing | adapter.productivity | 19 | 0 | 19 |

@@ -1,0 +1,22 @@
+{
+  "run_id": "run-20260718-190852",
+  "workflow": "veritas-test-run",
+  "verdict": "SUCCESS",
+  "steps_total": 1,
+  "steps_success": 1,
+  "elapsed_ms": 1775,
+  "timestamp": "2026-07-18T11:08:52Z",
+  "results": [
+    {
+      "step": "veritas-structured-tests",
+      "status": "SUCCESS",
+      "execution_id": "exec-1784372931184",
+      "skill_id": "veritas-core",
+      "duration_ms": 1772,
+      "health": {
+        "state": "HEALTHY",
+        "score": 96
+      }
+    }
+  ]
+}
