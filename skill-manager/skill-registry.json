@@ -172,8 +172,8 @@
         "owner": "hermes-platform",
         "namespace": "adapter"
       },
-      "lifecycle": "active",
-      "status": "ok",
+      "lifecycle": "archived",
+      "status": "archived",
       "tags": [],
       "mount": "routed",
       "trigger": [],
@@ -199,8 +199,8 @@
         "owner": "hermes-platform",
         "namespace": "adapter"
       },
-      "lifecycle": "active",
-      "status": "ok",
+      "lifecycle": "archived",
+      "status": "archived",
       "tags": [],
       "mount": "routed",
       "trigger": [
@@ -228,8 +228,8 @@
         "owner": "hermes-platform",
         "namespace": "adapter"
       },
-      "lifecycle": "active",
-      "status": "ok",
+      "lifecycle": "archived",
+      "status": "archived",
       "tags": [],
       "mount": "routed",
       "trigger": [
@@ -257,8 +257,8 @@
         "owner": "hermes-platform",
         "namespace": "adapter"
       },
-      "lifecycle": "active",
-      "status": "ok",
+      "lifecycle": "archived",
+      "status": "archived",
       "tags": [],
       "mount": "routed",
       "trigger": [
@@ -286,8 +286,8 @@
         "owner": "hermes-platform",
         "namespace": "adapter"
       },
-      "lifecycle": "active",
-      "status": "ok",
+      "lifecycle": "archived",
+      "status": "archived",
       "tags": [],
       "mount": "routed",
       "trigger": [],
