@@ -1,0 +1,23 @@
+{
+  "name": "a3-test-run",
+  "description": "A3 Multi-Agent System 单元测试套件 — 真实业务 workflow（integration 需 API key，不入无人值守）",
+  "version": "1.0.0",
+  "caller_tier": 2,
+  "caller_scope": "project",
+  "governance": {
+    "constitution": "v1.0",
+    "registry": "v1.1",
+    "telemetry": "required",
+    "namespace": "project.a3.*"
+  },
+  "steps": [
+    {
+      "name": "a3-unit-tests",
+      "skill": "a3-runtime-infrastructure",
+      "intent": "a3 runtime 基础设施 测试 多智能体 pipeline",
+      "action": "cd ~/A3-Multi-Agent-System && .venv/bin/pytest tests/ --ignore=tests/integration -q 2>&1 | tail -1 | grep -E '[0-9]+ passed'",
+      "timeout_s": 300,
+      "critical": true
+    }
+  ]
+}

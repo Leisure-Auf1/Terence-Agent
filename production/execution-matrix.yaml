@@ -1,0 +1,71 @@
+# Phase P.1.1 — Hermes Production Execution Matrix
+# 真实项目执行矩阵：项目 × workflow × 技能 × 触发 × 门禁
+# Governance: Constitution v1.0 · Registry v1.1 · C.3 namespace model
+version: "1.0"
+updated: "2026-07-18"
+
+matrix:
+  # ── 自托管例程 (P.0) ──
+  - workflow: daily-production-report
+    project: hermes-os
+    scope: core
+    skills: [harness-preflight, skill-manager, task-progress]
+    trigger: daily (systemd timer + 手动)
+    unattended: true
+    gate: 26 checks ALL GREEN
+    evidence: production/reports/daily-YYYY-MM-DD.md
+
+  # ── 真实项目 workflow (P.1) ──
+  - workflow: veritas-test-run
+    project: veritas
+    scope: project
+    skills: [veritas-core]                  # project.veritas.core
+    trigger: daily (systemd timer + 手动)
+    unattended: true
+    gate: make test 全绿 (基线 558 passed)
+    evidence: telemetry + production/runs/
+
+  - workflow: a3-test-run
+    project: a3
+    scope: project
+    skills: [a3-runtime-infrastructure]     # project.a3.infrastructure
+    trigger: daily (systemd timer + 手动)
+    unattended: true
+    gate: pytest --ignore=tests/integration 全绿 (基线 1074 passed)
+    evidence: telemetry + production/runs/
+    notes: integration 测试需外部 API key，仅手动触发
+
+  - workflow: ucampus-readiness
+    project: ucampus
+    scope: project
+    skills: [ucampus-auto-complete]         # project.ucampus.automation
+    trigger: daily (systemd timer + 手动)
+    unattended: true
+    gate: CDP 服务 + 技能文件 + 代理三项就绪
+    evidence: telemetry + production/runs/
+    notes: 🔴 账号/答题操作永不入无人值守管道 (PII/凭据红线)，仅就绪检查
+
+  # ── 数据与优化 (P.1) ──
+  - workflow: skill-usage-collection
+    project: hermes-os
+    scope: core
+    skills: [skill-manager]
+    trigger: daily (systemd timer)
+    unattended: true
+    gate: 149 技能全覆盖画像
+    evidence: production/analytics/skill-usage-YYYY-MM-DD.json
+
+  - workflow: optimization-loop
+    project: hermes-os
+    scope: core
+    skills: [skill-manager, architecture-constraints]
+    trigger: daily (systemd timer, 数据驱动)
+    unattended: true                        # 仅生成 pending 提案
+    gate: 提案 requires_approval=true, 人工审批后才执行
+    evidence: ~/.hermes/runtime/governance/proposals/proposals.jsonl
+
+escalation:
+  workflow_failure: production-monitor.sh 可见 + 日报 FAIL 项
+  degraded_skill: health engine → P1 提案 (人批)
+  unused_skill: optimization loop → P3 提案 (人批)
+  approval_channel: 用户在会话中审批 (approve/reject + proposal_id)

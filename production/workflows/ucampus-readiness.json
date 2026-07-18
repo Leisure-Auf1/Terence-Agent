@@ -1,0 +1,24 @@
+{
+  "name": "ucampus-readiness",
+  "description": "UCampus 自动化环境就绪检查 — CDP 浏览器 / 技能文件 / 代理三项（🔴 不含任何账号操作）",
+  "version": "1.0.0",
+  "caller_tier": 2,
+  "caller_scope": "project",
+  "governance": {
+    "constitution": "v1.0",
+    "registry": "v1.1",
+    "telemetry": "required",
+    "namespace": "project.ucampus.*",
+    "pii_policy": "strict — 凭据/账号操作永不进入此 workflow"
+  },
+  "steps": [
+    {
+      "name": "ucampus-env-readiness",
+      "skill": "ucampus-auto-complete",
+      "intent": "u校园 课程 自动化 环境 就绪 浏览器",
+      "action": "R=0; systemctl --user is-active hermes-chrome-cdp.service >/dev/null 2>&1 && echo 'cdp-service: active' || { echo 'cdp-service: inactive (按需启动)'; }; for s in u-campus/ucampus-auto-complete u-campus-course-automation; do test -f ~/.hermes/skills/$s/SKILL.md && echo \"skill $(basename $s): ok\" || { echo \"skill $(basename $s): MISSING\"; R=1; }; done; timeout 5 bash -c 'echo > /dev/tcp/127.0.0.1/7897' 2>/dev/null && echo 'proxy 7897: reachable' || echo 'proxy 7897: down (非关键)'; exit $R",
+      "timeout_s": 60,
+      "critical": true
+    }
+  ]
+}
