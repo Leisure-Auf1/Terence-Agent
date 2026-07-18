@@ -1,7 +1,7 @@
 {
-  "version": "1.1.0",
-  "schema_version": "1.1",
-  "updated": "2026-07-18",
+  "version": "1.2.0",
+  "schema_version": "1.2",
+  "updated": "2026-07-18T16:05:41Z",
   "total_skills": 149,
   "fields": [
     "name",
@@ -21,7 +21,8 @@
     "category",
     "path",
     "registered",
-    "updated"
+    "updated",
+    "observability"
   ],
   "mount_strategies": {
     "always": "每次对话自动加载",
