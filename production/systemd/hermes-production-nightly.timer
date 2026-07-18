@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Hermes Production Nightly Pipeline daily at 09:30
+
+[Timer]
+OnCalendar=*-*-* 09:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

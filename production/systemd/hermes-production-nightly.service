@@ -1,0 +1,10 @@
+[Unit]
+Description=Hermes Production Nightly Pipeline (daily check + workflows + usage + optimization)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash %h/Terence-Agent/scripts/production-nightly.sh
+WorkingDirectory=%h/Terence-Agent
+TimeoutStartSec=1800
+Nice=10
